@@ -1,67 +1,91 @@
 # Discovery — "Cómo cambiar tu negocio de transporte"
 
-**Status:** DRAFT for owner validation. Phase 1 (Discovery). No code, no migrations.
-**Owner agent:** `BusinessAnalystAgent`. Financial parts cross-referenced to
-[`docs/finance/financial-model.md`](../finance/financial-model.md); entity/ERD parts to
-[`docs/database/conceptual-model.md`](../database/conceptual-model.md).
-
-Everything marked **[ASSUMPTION]** must be confirmed by the company owner (see §L).
-Nothing here invents facts about the specific company; where a fact is unknown it is
-listed in §D and turned into a question in §L.
+**Status:** Owner answered all 28 questions on 2026-09-10; folded in below. Still DRAFT
+— the ~10 follow-up data questions in §L.2 remain open, and this document awaits your
+final validation before the physical ERD is produced.
+**Owner agent:** `BusinessAnalystAgent`. Financial detail in
+[`docs/finance/financial-model.md`](../finance/financial-model.md); entities/ERD in
+[`docs/database/conceptual-model.md`](../database/conceptual-model.md); the three
+non-obvious calls made from these answers are recorded as decisions:
+[0001](../decisions/0001-overhead-allocation-method.md) (overhead allocation),
+[0002](../decisions/0002-trip-distance-source.md) (trip distance without odometer),
+[0003](../decisions/0003-weekly-reporting-period.md) (weekly period).
 
 ---
 
 ## A. Business analysis
 
-A road-freight company operates a fleet of trucks that haul loads for customers over
-routes, earning a freight charge per trip and incurring costs for fuel, tolls, driver
-pay, maintenance, tires, insurance, financing/depreciation and administrative overhead.
+A road-freight company runs **6 dry-van (*furgón seco*) trucks and 1 pick-up** (7
+powered units, no trailers) hauling loads for customers at a **flat rate per trip**,
+against costs for fuel, tolls, external maintenance, tires, per-truck fixed costs
+(insurance, permits, *fumigación*, *dekra*, *marchamo*) and company overhead (salaries,
+administrative salaries, social charges — including driver pay, see below).
 
-**Problem.** Operational data (trips, kilometres, fuel, maintenance, downtime) and
-financial data (invoices, payments, fixed costs) live in disconnected places — paper,
-spreadsheets, fuel receipts, workshop invoices, memory. Nothing ties them together at
-the level of a single truck, so **cost per kilometre, profit per trip, and profitability
-by customer / route / unit are unknown**. Pricing, contract retention, fleet-replacement
-and fleet-expansion decisions are made on intuition.
+**Problem.** Nothing today ties trips, fuel, tolls and maintenance to the financial
+side (invoices, payments, fixed costs) at the truck level, so the owner cannot say
+which trucks are profitable. Overhead has **never been measured**; that is explicitly
+part of what this system must do.
 
-**Solution.** One system that records the operational and commercial events, computes
-the cost and profitability model (see finance doc) for any date range and any grain
-(trip, route, customer, truck, fleet), shows it on a dashboard, and lets every number be
-traced back to the exact source records that produced it.
+**Solution.** Capture the operational and commercial events, compute cost and
+profitability at any grain (trip, route, customer, truck, fleet) for the owner's
+**weekly** reporting cycle (ADR 0003), show it on a dashboard, and make every number
+traceable to its source records.
 
 ### Actors
 
-| Actor | Role in the system |
+| Actor | Role |
 |---|---|
-| Owner / manager | Consumes the dashboard; sets targets; makes pricing & fleet decisions |
-| Dispatcher / operations | Registers trips, assigns truck + driver + route, records kilometres |
-| Driver | Source of trip data, fuel loads, tolls, incidents, odometer readings |
-| Accountant / admin | Invoices, payments, fixed costs, overhead, payroll inputs |
-| Workshop / maintenance manager (may be external) | Services, repairs, downtime, parts |
-| Data auditor | Verifies that every KPI reconciles to its source records |
+| Owner | Consumes the dashboard; pricing & fleet decisions |
+| Secretary | Data entry: trips, invoices, payments |
+| Owner's wife, owner's son | Additional users — role TBD (§L.2) |
+| Drivers | Source of trip events; not system users; paid hourly, change per trip |
+| External workshops | Perform all maintenance (no in-house shop) |
 
-### Scope (proposed)
+### Scope
 
-- **In:** fleet cost accounting; trip / route / customer / truck profitability;
-  preventive + corrective maintenance with status; fuel & toll capture; fixed &
-  variable cost registry; overhead with a documented allocation method; invoicing-lite
-  with payment status; KPI dashboard with drill-through.
-- **Out (MVP):** full double-entry accounting and tax filing; GPS/telematics
-  integration; route optimisation; driver payroll processing; cargo/load marketplace;
-  tire retread economics; multi-currency; customer portal.
-- **Later phases:** n8n automations (fuel/toll import, maintenance reminders);
-  telematics odometer feed; e-invoicing integration; ABC / hybrid overhead allocation.
+- **In:** cost accounting for 7 units; trip / route / customer / truck profitability;
+  preventive (oil change, by km — estimated, see ADR 0002) + corrective maintenance
+  with status; fuel & toll capture (manual); truck-fixed cost registry; overhead
+  capture + activity-based allocation (ADR 0001); mixed invoicing (per-trip or
+  bundled); payment tracking against 0/8/15-day terms; weekly KPI dashboard with
+  drill-through.
+- **Out (MVP):** depreciation / capital cost (owner: omit — see §A note below);
+  trailer tracking (none exist); telematics/GPS; route optimisation; driver payroll
+  processing beyond capturing hours × rate; full double-entry accounting/tax filing;
+  fuel-card or toll-tag integrations (not used); customer portal.
+- **Later:** n8n import of fuel-station statements (obtainable on request); per-trip
+  odometer capture if the company adopts it; hybrid overhead pools; historical data
+  migration (2 years, from spreadsheets/paper).
 
-### Key [ASSUMPTION]s (confirm in §L)
+### Confirmed facts that replace earlier assumptions
 
-1. Revenue is recognised per trip via a freight charge; pricing basis (flat / per-km /
-   per-ton / per-ton-km / negotiated) is **unknown**.
-2. One primary driver per trip; occasionally two.
-3. Company owns its trucks; some may be financed or leased — capital-cost treatment TBD.
-4. Trailers may or may not need to be tracked as separate assets.
-5. Single operating currency; VAT/IVA applies to invoices.
-6. Odometer is captured at least at trip start/end or at each fuel event.
-7. Reporting period is the calendar month.
+| Topic | Confirmed |
+|---|---|
+| Pricing | Flat rate per trip; no fuel/waiting/stop surcharges mentioned (confirm in §L.2) |
+| Revenue recognition | At **trip completion** |
+| Rate agreements | Exist for some customers but vary — trip price is authoritative, agreement is a default only |
+| Invoicing | **Mixed**: some invoices bundle several trips, others are one trip = one invoice |
+| Payment terms | Cash on delivery, 8-day credit, or 15-day credit (varies by customer); **15-day accounts run ~8 days late** in practice |
+| Currency / tax | Colones (CRC); IVA **13%** flat |
+| Fleet | 6 dry-van trucks + 1 pick-up = 7 units; **no trailers** |
+| Ownership | 4 owned, 2 financed — financing terms **not tracked** (explicitly deferred) |
+| Capital cost | **Omitted** — no depreciation, no financing cost in the cost model |
+| Driver assignment | Changes per trip (not fixed to a truck) |
+| Driver pay | **Hourly**, based on daily hours worked; **not** attributable to a trip or truck → treated as part of the **overhead pool** (ADR 0001) |
+| Truck-specific fixed costs | Insurance (theft & rollover), permits, *fumigación* (quarterly), *dekra* (annual inspection), *marchamo* (annual circulation tax) |
+| Company overhead | Employee salaries, administrative salaries, social charges (*cargas sociales*) — total currently **unknown**, the system must capture it |
+| Overhead allocation | By truck, weighted by **activity performed** (ADR 0001: worked-days share, default) |
+| Fuel | Retail stations; account statements obtainable on request (future n8n import) |
+| Tolls | Cash only, no electronic tag, no statements — manual entry |
+| Odometer | **Not recorded at all** today (ADR 0002: distance defaults to route standard km) |
+| Availability | Only **breakdowns/corrective** downtime counts against it; planned/preventive service does not |
+| Utilization | Worked days ÷ available days |
+| Preventive maintenance | Only defined interval is **oil change, by kilometres** (value TBD, §L.2); all work is done by **external** workshops |
+| Tires | Tracked by position, rotated, replaced on visible wear — no serials or km today |
+| Reporting period | **Weekly**, reported every Thursday (ADR 0003) |
+| Historical data | ~2 years, in spreadsheets and paper |
+| Users | ~4: owner, secretary, owner's wife, owner's son |
+| Rollout | All 7 units from the start; no fixed production date; **target: finished before end of 2026** |
 
 ---
 
@@ -69,308 +93,314 @@ traced back to the exact source records that produced it.
 
 ### B.1 Trip lifecycle
 
-Rate agreed with customer → trip planned (truck + driver + route + date) → dispatched →
-in transit (fuel loads, tolls, incidents recorded) → completed (arrival, final
-odometer, delivery confirmed) → billed (added to an invoice) → paid.
+Rate agreed (or defaulted from a rate agreement) → trip planned (truck + driver +
+route + date) → dispatched → in transit (fuel, tolls, incidents recorded) → completed
+(price confirmed; **no odometer captured** — distance = route standard km, ADR 0002)
+→ billed, alone or bundled with other trips (mixed per owner) → paid (cash / 8-day /
+15-day, often ~8 days late on 15-day accounts).
 
 ```mermaid
 flowchart LR
-  Q[Rate agreed] --> P[Trip planned] --> D[Dispatched] --> T[In transit]
-  T --> C[Completed + final odometer]
-  C --> B[Added to invoice]
-  B --> Pay[Payment received]
+  Q[Rate agreed / defaulted] --> P[Trip planned] --> D[Dispatched] --> T[In transit]
+  T --> C["Completed (price set; distance = route standard km)"]
+  C --> B[Billed: solo or bundled]
+  B --> Pay[Payment: cash / 8d / 15d]
   T -. fuel .-> F[(fuel_record)]
-  T -. toll .-> TL[(toll_record)]
-  T -. incident .-> I[(note / trip_expense)]
+  T -. toll, cash .-> TL[(toll_record)]
 ```
 
 ### B.2 Fuel event
 
-Driver refuels → captures litres, unit price, odometer, station, payment method,
-receipt → record linked to the truck and (if known) the trip. Later: bulk import via
-n8n from fuel-card statements.
+Driver refuels at a **retail station** → litres, price, station, payment method
+recorded → linked to truck (+ trip if known). Statements can be requested from
+stations — candidate for a later n8n import.
 
 ### B.3 Toll event
 
-Toll paid (electronic tag or cash) → amount, location, datetime, payment method →
-linked to truck and (if known) trip. Later: import from tag statements via n8n.
+Paid in **cash**, no tag, no statement → manually recorded: truck, trip (if known),
+amount, location.
 
-### B.4 Preventive maintenance
+### B.4 Preventive maintenance (oil change only, for now)
 
-Schedule per truck (interval by kilometres and/or time and/or engine hours) → system
-computes next-due and status (`AL_DIA` / `PROXIMO` / `VENCIDO`) → work order → service
-performed by a provider → parts, labour, other cost and downtime recorded → odometer /
-date reset on the schedule item.
+The only defined interval is **oil change by kilometres**. Because there is no
+odometer, the due point is tracked against `trucks.current_odometer`, an **estimate**
+maintained from route-km accumulation and re-anchored by the odometer the **external
+workshop** records at every service (ADR 0002).
 
 ```mermaid
 flowchart LR
-  S[maintenance_schedule] --> E{Due?}
-  E -- "within lead" --> PX[PROXIMO]
-  E -- "past due" --> VZ[VENCIDO]
-  E -- "otherwise" --> AD[AL_DIA]
-  PX --> WO[Work order] --> SV[Service performed] --> R[Record cost + downtime] --> S
-  VZ --> WO
+  S[maintenance_schedule: oil change, by km] --> E{"current_odometer (estimate) ≥ due?"}
+  E -- yes --> WO[Work order to external shop]
+  E -- no, within lead --> PX[PROXIMO]
+  WO --> SV[Service performed] --> R["Record cost + real odometer"] --> Anchor[Re-anchor current_odometer] --> S
 ```
 
 ### B.5 Corrective maintenance
 
-Breakdown / failure reported → truck out of service → repaired by provider → cost and
-downtime recorded → truck back in service.
+Breakdown reported → truck out of service (**this counts against availability**) →
+repaired by an external workshop → cost and downtime recorded → back in service.
 
 ### B.6 Tire management
 
-Tire purchased → mounted on a truck at a position (axle / side) at odometer X →
-rotations → dismounted at odometer Y (worn / damaged / sent to retread) → cost per km
-per tire computed.
+Tires are **rotated by position** and **replaced when visibly worn** (tread lines) —
+no serial numbers or kilometres tracked today. Modelled as position-based mount /
+rotate / dismount events so history exists even without exact wear metrics.
 
 ### B.7 Cost registry
 
-- **Truck fixed costs:** recurring per-truck costs (insurance, permits, financing /
-  lease, telematics, parking) with an effective period.
-- **Overhead:** company-level recurring costs (admin salaries, office rent, management,
-  dispatch software) with an effective period and an allocation basis.
-- **Ad-hoc truck expense:** wash, minor supplies, fines — date, amount, category.
+- **Truck-fixed** (direct to a truck, various billing cycles): insurance
+  (theft/rollover), permits, *fumigación* (quarterly), *dekra* (annual), *marchamo*
+  (annual). Prorated to the weekly period (ADR 0003).
+- **Overhead** (company-wide, currently unmeasured): all salaries (including driver
+  hours × rate) + social charges. Captured weekly, allocated by activity (ADR 0001).
 
 ### B.8 Invoicing & collection
 
-One or more completed trips → invoice to customer → status (draft / sent / paid /
-overdue / partial) → payments applied → status recomputed.
+Trips are billed **individually or bundled**, per the owner's own mixed practice.
+Payment terms are cash / 8 days / 15 days per customer; 15-day accounts are tracked
+against their ~8-day typical slippage for collections follow-up.
 
-### B.9 Period KPI computation
+### B.9 Weekly KPI computation
 
-For any date range the system aggregates operational + financial records into the KPI
-set (see finance doc §K), renders the dashboard, and keeps every figure drillable to
-the source rows.
+Every **Thursday**, the system aggregates the trailing week (and, on demand, any
+custom or calendar-month range) into the KPI set
+([finance doc §K](../finance/financial-model.md#k-kpis)), with drill-through to source
+rows.
 
 ---
 
 ## C. Data we must collect
 
-Summarised here; attribute-level detail is in
-[`docs/database/conceptual-model.md`](../database/conceptual-model.md) §H.
+Updated from the generic list to reflect what actually exists. Attribute-level detail
+in [`docs/database/conceptual-model.md`](../database/conceptual-model.md) §H.
 
-- **Truck:** plate, internal number, VIN, make/model/year, configuration, acquisition
-  date & cost, acquisition mode (cash/finance/lease) + terms, useful life & residual
-  (for depreciation), tank capacity, baseline km/l, current odometer, status, base yard.
-- **Driver:** identity, licence class & expiry, hire date, pay scheme, contact, status.
-- **Customer:** identity, tax id, credit terms, contact, status.
-- **Route:** origin, destination, waypoints, standard km, standard duration, typical
-  toll cost, road type, round-trip flag.
-- **Trip:** truck, driver(s), route or ad-hoc origin/destination, planned & actual
-  dates/times, start & end odometer, loaded weight/volume, cargo type, rate basis &
-  agreed price, status, linked invoice, incidents.
-- **Fuel record:** truck, trip?, datetime, odometer, litres, unit price, total,
-  station, payment method, receipt ref.
-- **Toll record:** truck, trip?, datetime, location, amount, payment method.
-- **Maintenance:** truck, type, category, provider, entry & completion dates, odometer,
-  description, parts / labour / other cost, total, downtime, linked schedule item,
-  warranty flag.
-- **Maintenance schedule:** truck, task, interval type & value, last performed
-  (odometer/date), lead threshold for `PROXIMO`, active flag.
-- **Tire:** serial, brand/model, size, purchase date & cost, new tread depth, status,
-  current truck & position, mount & dismount odometer, retread count, disposal reason.
-- **Truck fixed cost / overhead:** truck (null = company-level), cost type, amount,
-  period, effective from/to, allocation basis.
-- **Truck expense:** truck, type, date, amount, description, receipt ref.
-- **Invoice:** customer, number, issue & due dates, currency, subtotal, tax, total,
-  status, linked trips.
-- **Payment:** invoice, date, amount, method, reference.
-- **User:** identity, role, status.
+- **Truck (7 units):** plate, type (*furgón seco* ×6, pick-up ×1), ownership
+  (owned/financed — financing terms not tracked yet), current-odometer **estimate**.
+- **Driver:** identity, hourly rate, licence info; **daily hours worked** (new:
+  `driver_worklogs`) to size the overhead driver-labour pool.
+- **Customer:** identity, credit terms (0 / 8 / 15 days), billing preference
+  (per-trip vs bundled — informational, not enforced).
+- **Route:** origin, destination, **standard km** (now load-bearing — it is the only
+  distance source, ADR 0002), typical toll cost.
+- **Trip:** truck, driver, route, dates, price (flat), invoice link, distance flag
+  (estimated vs manual override).
+- **Fuel record:** truck, trip?, station (new lookup `fuel_stations`), litres, price,
+  total, payment method.
+- **Toll record:** truck, trip?, amount, cash only.
+- **Maintenance:** truck, type (preventive/corrective), external provider (required —
+  no in-house option), cost breakdown, **odometer at service** (re-anchors the
+  estimate), downtime (only corrective counts against availability).
+- **Maintenance schedule:** currently just "oil change" per truck, interval in km
+  (value pending, §L.2).
+- **Tire:** position-based events (mount/rotate/dismount on visible wear); serial and
+  km optional.
+- **Truck fixed cost:** type (seguro, permisos, fumigación, dekra, marchamo), amount,
+  billing cycle (monthly/quarterly/annual), effective dates.
+- **Overhead cost:** type (salarios, salarios administrativos, cargas sociales, …),
+  amount, period — captured weekly or prorated from a longer cycle.
+- **Driver worklog (new):** driver, date, hours worked, hourly rate → drives the
+  overhead labour pool.
+- **Invoice:** customer, trips covered (one or many), currency CRC, IVA 13%, status.
+- **Payment:** invoice, date, amount, method.
+- **User:** identity, role (owner/admin, admin/data-entry, viewer — see §L.2).
 
 ---
 
-## D. Missing data / open unknowns
+## D. Missing data
 
-These block a correct model. Each becomes a question in §L.
+### D.1 Resolved by the owner (2026-09-10)
 
-1. **Revenue model** — how a trip is priced; accessorial charges (waiting, extra stops,
-   fuel surcharge).
-2. **Revenue recognition point** — trip completion vs invoice issued vs payment received.
-3. **Fleet size & composition**; whether tractor and trailer are separate assets.
-4. **Trailer tracking / costing** — needed or not.
-5. **Driver compensation scheme(s)** and whether driver cost is trip-attributable.
-6. **Capital cost treatment** — depreciation (method, useful life, residual) vs
-   financing payment as proxy.
-7. **Overhead** — which costs are per-truck vs company-wide, and monthly totals.
-8. **Overhead allocation basis** the owner prefers.
-9. **Fuel source** — retail / bulk tank / fuel card; exportability for n8n.
-10. **Toll source** — tag statement vs cash; exportability.
-11. **Odometer capture** — per trip, per fuel stop, or GPS; reliability.
-12. **Maintenance intervals** — defined by km / time / engine hours; source (OEM).
-13. **Own workshop vs external shops.**
-14. **Individual tire tracking** today — yes/no.
-15. **Availability definition** — does planned preventive downtime count as unavailable.
-16. **Utilization definition** the owner wants.
-17. **Currency, tax rate, invoice numbering, per-customer credit terms.**
-18. **Users & roles** — who enters what, who sees what.
-19. **Historical data** — what exists, where, how far back to load.
-20. **Reporting period** — calendar month or custom.
-21. **Pilot scope & target go-live date.**
+Pricing basis, revenue recognition point, rate-agreement existence, invoice bundling
+practice, payment terms & typical delay, currency & tax rate, fleet size/composition,
+trailer existence, ownership split, depreciation treatment, driver assignment pattern,
+driver pay scheme & attributability, fixed-vs-overhead cost classification, overhead
+size (unknown — to be captured, not estimated), overhead allocation preference, fuel
+sourcing, toll method, odometer practice (none), availability definition, utilization
+definition, preventive-maintenance basis (km, oil change only), maintenance provider
+model (external only), tire tracking method, reporting period (weekly), historical
+data depth (2 years) and source (spreadsheets/paper), users (4, named roles pending),
+pilot scope (all units) and target (before end of 2026).
+
+### D.2 Still needed (blocks seeding / finalising the physical model)
+
+1. Oil-change interval in **kilometres** (and whether any other preventive task should
+   be added, e.g. filters, brake checks).
+2. A rough **current odometer** per truck today, to anchor the oil-change estimate at
+   go-live; and confirmation the workshop will record odometer at every future service.
+3. The **route list** with standard km (and typical toll cost) per route — this is now
+   the sole distance source (ADR 0002).
+4. Per-truck **fixed-cost amounts and billing cycle** for: seguro, permisos,
+   fumigación, dekra, marchamo.
+5. **Driver hourly rate(s)**, and whether daily hours are logged per driver only, or
+   also tagged to a truck/trip (affects whether the driver-labour pool can ever be
+   made truck-specific instead of pure overhead).
+6. Exact **weekly cycle boundary** — is Thursday the report day for "last Thu→Wed", or
+   does the week start Thursday? (ADR 0003 assumes the former.)
+7. Roles for the **secretary, wife and son** — data-entry (admin) vs read-only.
+8. Confirm **no surcharges** apply to the flat trip rate (fuel, waiting time, extra
+   stops) — or list them if they do.
+9. For 8/15-day customers, does one **payment always settle one invoice**, or can a
+   single payment cover several invoices?
+10. Is **IVA 13% universal**, or are any customers/trip types exempt or zero-rated?
 
 ---
 
 ## I. Business rules
 
-Financial formulae are in [`docs/finance/financial-model.md`](../finance/financial-model.md).
-Rules here are the operational constraints and derivations.
+Formulas are in [`docs/finance/financial-model.md`](../finance/financial-model.md).
 
-### Trips & kilometres
+### Trips & distance (ADR 0002)
 
-- `trip_distance = end_odometer − start_odometer`, must be `> 0`.
-- A trip cannot be **completed** without: start & end odometer (or an explicit
-  `distance_estimated` flag with a reason), actual end datetime, and an agreed price.
-- If odometer is missing, fall back to `route.standard_km` and set `distance_estimated`.
-- Flag any trip whose distance deviates from `route.standard_km` by more than a
-  configurable tolerance (default **±15%**).
-- Odometer readings per truck must be monotonically non-decreasing; anomalies are
-  flagged, not silently accepted.
+- `trip.distance = route.standard_km` unless a manual override is entered;
+  `distance_estimated = true` whenever the route default was used.
+- A route with no `standard_km` blocks its trips from per-km aggregates until set.
+- A trip cannot be **completed** without: route (or manual origin/destination + a
+  distance value), actual end datetime, and a price.
 
-### Maintenance status (per schedule item)
+### Maintenance status (oil change only, for now)
 
-- `VENCIDO` if `current_odometer ≥ next_due_odometer` **or** `today ≥ next_due_date`.
-- `PROXIMO` if within `lead_km` of the due odometer **or** `lead_days` of the due date.
+- `VENCIDO` if `trucks.current_odometer (estimate) ≥ next_due_odometer`.
+- `PROXIMO` if within a configurable `lead_km` of the due odometer.
 - `AL_DIA` otherwise.
-- A truck's overall maintenance status is the worst status among its active schedule items.
+- Every service visit records the **real odometer**, which re-anchors the estimate for
+  that truck (ADR 0002).
 
 ### Availability & utilization
 
-- `availability(t,P) = (period_days − downtime_days) / period_days`.
-- Downtime from **corrective** maintenance always counts.
-- Downtime from **preventive** maintenance counts as unavailable **unless the owner
-  decides otherwise** — flagged decision (§L Q15).
-- `utilization` definition is owner-selected (§L Q16); default proposal
-  `revenue_days / available_days`.
+- `availability(t,P) = (period_days − corrective_downtime_days) / period_days`.
+  **Only breakdowns/corrective repairs count**; planned/preventive service does not.
+- `utilization(t,P) = worked_days(t,P) / available_days(t,P)`, both counted within the
+  weekly window by default (ADR 0003).
 
 ### Invoicing & revenue
 
-- `invoice.total = Σ invoice_line + tax`.
-- Status is derived: `paid` when `Σ payments ≥ total`; `overdue` when
-  `today > due_date` and not paid; `partial` when `0 < Σ payments < total`.
-- A trip may appear on exactly one invoice (`invoice_trip` link).
-- Revenue for a truck/period is `Σ (trip price)` for trips recognised in the period;
-  the recognition point is owner-selected (§L Q2), default **trip completion (accrual)**.
+- `invoice.total = subtotal + (subtotal × 0.13)` (IVA, pending §D.2 #10 on exemptions).
+- An invoice may cover **one or several** trips (mixed practice); a trip is billed on
+  exactly one invoice.
+- Status derived: `paid` / `overdue` (past due_date, unpaid) / `partial`.
+- Revenue is recognised at **trip completion**, independent of invoice or payment timing.
 
-### Cost attribution
+### Cost attribution (ADR 0001)
 
-- **Direct cost of a trip** = fuel + tolls + trip expenses + per-trip/per-km driver pay
-  (if the scheme allows attribution).
-- **Truck period cost** = direct costs + truck-specific fixed costs (prorated) +
-  capital cost (depreciation *or* financing payment, never both) + allocated overhead.
-- Overhead is allocated by the method documented in the finance doc; the chosen method
-  and the per-truck weights are **persisted per period** for auditability.
-- Tire cost is amortised over `(dismount_odometer − mount_odometer)` or over expected
-  tire life while mounted — method documented in the finance doc.
+- **Direct cost of a trip** = fuel + tolls + trip-linked expenses. Driver pay is
+  **not** included here (it is hourly and not trip-attributable).
+- **Truck period cost** = direct costs + that truck's own maintenance & tire wear +
+  its truck-fixed costs (prorated, ADR 0003) + its allocated share of overhead
+  (worked-days weighted, ADR 0001). **No depreciation, no financing cost.**
+- Overhead includes the driver-labour pool (`Σ driver_worklogs.hours × rate`).
+- The allocation method and per-truck weights are persisted per period
+  (`fixed_cost_allocations`) for auditability.
 
 ### Data integrity & traceability
 
-- No hard delete of a truck, driver or customer that has historical trips (soft delete).
-- Every KPI figure must resolve to the exact set of source-row ids that produced it.
-- All monetary values stored as `DECIMAL`; rounding (half-up, 2 dp) only at presentation.
-- Lookups (cost types, providers, stations, categories) — no free-text on reportable
-  dimensions.
-- Every transactional row records `created_by` (user) and timestamps.
+- No hard delete of a truck, driver or customer with historical trips.
+- Every KPI figure resolves to the exact source-row ids that produced it.
+- All monetary values `DECIMAL`; currency CRC; rounding (half-up, 2 dp) only at
+  presentation.
+- Lookups (cost types, providers, stations) — no free text on reportable dimensions.
+- Every transactional row records `created_by` and timestamps.
 
 ---
 
 ## L. Questions for the company owner
 
-### Revenue & commercial
-1. How do you price a trip today — flat per trip, per km, per ton, per ton-km, or
-   negotiated case by case? Any surcharges (fuel, waiting time, extra stops)?
-2. When do you consider revenue "earned" — trip completed, invoice issued, or payment
-   received?
-3. Do you have written rate agreements per customer or per route? Can we get copies?
-4. Do you put several trips on one invoice, or one invoice per trip?
-5. Typical payment terms per customer (credit days)? How often do invoices go overdue?
+### L.1 Answered 2026-09-10
 
-### Fleet
-6. How many trucks, and of what types / configurations?
-7. Are trailers separate assets you'd want tracked and costed on their own?
-8. For each truck: owned, financed or leased? For financed/leased, the monthly payment?
-9. Do you depreciate trucks? If yes, what useful life and residual value do you assume?
-   If no, should we treat the financing payment as the truck's capital cost?
-10. Is a truck usually driven by the same driver, or does it change per trip?
+| # | Question | Answer |
+|---|---|---|
+| 1 | Pricing basis / surcharges | Flat rate |
+| 2 | Revenue recognition point | Trip completed |
+| 3 | Written rate agreements | Yes, but they vary |
+| 4 | Invoice bundling | Mixed — some bundled, some per trip |
+| 5 | Payment terms / typical delay | Cash / 8d / 15d; 15d runs ~8 days late |
+| 6 | Fleet size/type | 6 dry-van trucks + 1 pick-up |
+| 7 | Trailers | None |
+| 8 | Ownership / financing payment | 4 owned, 2 financed; payment not tracked (pending) |
+| 9 | Depreciation | Omit |
+| 10 | Driver–truck pattern | Changes per trip |
+| 11 | Driver pay scheme | Hourly |
+| 12 | Driver cost attributable? | No — general cost, by daily hours |
+| 13 | Fixed cost classification | Per truck: seguro, permisos, fumigación, dekra, marchamo, (cambios de aceite / llantas / peajes are modelled elsewhere). Company: salarios, salarios administrativos, cargas sociales |
+| 14 | Overhead total | Unknown — the system must capture it |
+| 15 | Planned service vs availability | Only breakdowns count |
+| 16 | Utilization definition | Worked days vs available days |
+| 17 | Overhead allocation preference | By truck and activity performed |
+| 18 | Fuel sourcing | Retail stations; statements requestable |
+| 19 | Tolls | Cash, no tag, not exportable |
+| 20 | Odometer capture | None |
+| 21 | Preventive intervals | Oil change, by km |
+| 22 | Maintenance provider | External workshops only |
+| 23 | Tire tracking | Position rotation + visual wear |
+| 24 | Reporting period | Weekly, every Thursday |
+| 25 | Historical data | ~2 years, spreadsheets/paper |
+| 26 | Users | Owner, secretary, wife, son |
+| 27 | Pilot & go-live | All 7 units; no fixed date, target before end of 2026 |
+| 28 | Currency / tax | Colones (CRC); IVA 13% |
 
-### Drivers
-11. How are drivers paid — fixed salary, per km, per trip, % of freight, or a mix?
-12. Can driver pay be tied to specific trips/trucks, or is it a general cost?
+### L.2 Follow-up (blocks physical model / seed data)
 
-### Costs & overhead
-13. List your monthly fixed costs and mark which are **per truck** (insurance, permits,
-    GPS, parking) vs **company-wide** (office, admin salaries, management, software).
-14. Roughly what does company-wide overhead total per month?
-15. When a truck is in the shop, should **planned/preventive** service count against its
-    availability, or only **breakdowns**?
-16. What does "utilization" mean to you — km per day, days worked vs days available, or
-    loaded km vs total km?
-17. How would you want overhead split across trucks — by usage (km), by revenue,
-    equally per truck, or by activity? (We will recommend one; we want your view.)
+See §D.2 — the 10 items above, repeated here as direct questions:
 
-### Fuel & tolls
-18. Do you buy fuel at retail stations, from a bulk on-site tank, or with fuel cards?
-    Are card statements exportable (CSV/Excel)?
-19. Tolls: electronic tag with monthly statements, or cash? Exportable?
-20. Are odometer readings recorded per trip, per fuel stop, or via GPS?
-
-### Maintenance & tires
-21. Do you have preventive maintenance intervals defined (by km, by time, by engine
-    hours)? What's the source — manufacturer schedule?
-22. Who does the work — your own workshop, external shops, or a mix?
-23. Do you track tires individually today (serial, position, km run)?
-
-### Operations, data & rollout
-24. What reporting period do you use — calendar month, or something else?
-25. What historical data exists and where (spreadsheets, paper)? How far back should we
-    load it?
-26. Who will use the system, and what should each role be able to see and do?
-27. Which trucks should we pilot with first, and what is your target date to go live?
-28. Operating currency and tax rate (IVA) for invoices? Any invoice-numbering rules?
+1. What is the oil-change interval in kilometres? Any other preventive task to add?
+2. What is each truck's current odometer today (rough is fine)? Will the workshop
+   record odometer at every future service?
+3. Please share the route list with standard km (and typical toll) per route.
+4. Amount and billing cycle for each per-truck fixed cost (seguro, permisos,
+   fumigación, dekra, marchamo).
+5. Driver hourly rate(s); are daily hours logged per driver only, or also per
+   truck/trip?
+6. Does the reported week run Thursday→Wednesday, or start on Thursday?
+7. What should the secretary, your wife and your son each be able to see/do in the
+   system?
+8. Confirm: no surcharges on the flat trip rate (fuel, waiting, extra stops)?
+9. Can one payment cover more than one invoice, or is it always one payment per invoice?
+10. Is the 13% IVA universal, or are some trips/customers exempt?
 
 ---
 
 ## M. MVP definition
 
-**Goal.** For a pilot set of trucks over one chosen month, produce trustworthy
-cost/km, revenue/km, profit and margin **per truck, per route and per customer**, plus
-maintenance status, on one dashboard, with every figure drillable to source records.
+**Goal.** For **all 7 units**, on the owner's **weekly** cycle, produce trustworthy
+cost/km (estimated per ADR 0002), revenue/km, profit and margin per truck, route and
+customer, plus maintenance status, on one dashboard, every figure traceable to source
+records — finished before end of 2026.
 
 ### In scope
 
 | Area | MVP content |
 |---|---|
-| Master data | CRUD for trucks, drivers, customers, routes, cost types, maintenance providers, users/roles |
-| Trips | Create / complete trips (odometer, price, route, driver); list & filter |
-| Fuel & tolls | Manual entry linked to truck (+ trip) |
-| Maintenance | Preventive + corrective events with cost & downtime; per-truck schedule with computed `AL_DIA` / `PROXIMO` / `VENCIDO` |
-| Tires | Register + mount/dismount with odometer → cost per km per tire (lite) |
-| Costs | Truck fixed costs with effective periods; ad-hoc truck expenses; overhead entry + one allocation method (active-days) with a switch stub |
-| Invoicing-lite | Invoice bundling trips; status sent/paid/overdue/partial; payment capture |
-| Financial engine | Formulae from the finance doc as a **tested** service; period selector |
-| Dashboard | KPI set (finance doc §K) for fleet + per truck, with drill-through to source rows |
-| AuthZ | Roles (owner/admin, operations, workshop, read-only) via Policies/Gates |
+| Master data | Trucks (7), drivers, customers, routes (with standard km), cost types, maintenance providers (external), users/roles |
+| Trips | Create / complete trips (route, price, driver); distance from route standard km with manual override |
+| Fuel & tolls | Manual entry linked to truck (+ trip); station lookup |
+| Maintenance | Oil-change schedule (km, estimated odometer) + corrective events; provider always external; only corrective downtime affects availability |
+| Tires | Position-based mount/rotate/dismount register |
+| Costs | Truck-fixed costs (insurance, permits, fumigación, dekra, marchamo) prorated weekly; overhead entry (salaries, social charges) + driver worklogs; activity-based allocation (ADR 0001) |
+| Invoicing | Bundles trips or single-trip; CRC, IVA 13%; status sent/paid/overdue/partial; payment capture |
+| Financial engine | Formulas from the finance doc as a **tested** service; weekly period (ADR 0003) with month/quarter roll-up |
+| Dashboard | KPI set (finance doc §K) for fleet + per truck, contribution & net views, drill-through to source rows |
+| AuthZ | Roles: owner/admin, admin (data entry), viewer — via Policies/Gates |
 
 ### Deferred
 
-n8n imports; telematics; e-invoicing; full accounting; route optimisation; customer
-portal; ABC / hybrid overhead allocation; multi-currency; tire retread economics;
-full invoice line-items & tax breakdown (basic only in MVP).
+Depreciation/financing cost; trailer tracking (n/a); telematics/odometer capture;
+fuel/toll statement imports via n8n; fuel-efficiency km/l; hybrid overhead pools;
+2-year historical data migration (separate effort once the schema is stable);
+multi-currency; full invoice tax line-items beyond a flat 13%.
 
 ### Acceptance criteria
 
-- The data auditor can take any dashboard number and reconcile it exactly to the
-  listed source rows.
-- The financial-formula service has unit tests for **every** metric plus edge cases:
-  zero km, missing/estimated odometer, partial payments, cost changes mid-period,
-  a truck with no trips in the period.
-- `vendor/bin/pint`, `composer types:check` and `php artisan test` all pass in CI.
+- Any dashboard number reconciles exactly to its listed source rows.
+- The financial-formula service has unit tests for every metric plus edge cases: zero
+  trips in a week, a route with no `standard_km`, mid-week fixed-cost changes, a
+  partial payment, a truck with only corrective downtime, IVA rounding.
+- `vendor/bin/pint`, `composer types:check` and `php artisan test` pass in CI.
 
 ---
 
-## Next steps (await owner validation before starting)
+## Next steps
 
-1. Owner answers §L; update §A–§D and the finance / database docs accordingly.
-2. `FinancialAnalystAgent` finalises the cost taxonomy and the overhead-allocation
-   decision → `docs/decisions/`.
-3. `DataArchitectAgent` turns the conceptual model into a physical ERD + column-level
-   data dictionary.
-4. Only then: `LaravelArchitectAgent` architecture, then migrations.
+1. Resolve §L.2 (10 questions) — needed to seed real data, not to finish the schema.
+2. `DataArchitectAgent` turns the (now largely confirmed) conceptual model into the
+   physical ERD + column-level data dictionary.
+3. `LaravelArchitectAgent` architecture, then migrations — only after the physical
+   model is reviewed.
