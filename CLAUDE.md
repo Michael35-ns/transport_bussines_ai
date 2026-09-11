@@ -36,7 +36,7 @@ Pipeline order (each phase feeds the next):
 8. `DataAuditorAgent` — audits calculations, data integrity, simulated transactions.
 
 Invocation: `(new BusinessAnalystAgent)->prompt('...')` returns an `AgentResponse`; also `->stream()`, `->queue()`, and `::fake()` / `::assertPrompted()` for tests. Provider/model resolution falls back to `config('ai.default')` unless the class adds `#[Provider(...)]` / `#[Model(...)]`.
-**Provider: Anthropic (decided).** `ANTHROPIC_API_KEY` is set in `.env`. Still not fully wired — `config/ai.php` is unpublished (package default `ai.default` is `openai`), so before the first agent run either publish the config and set `'default' => 'anthropic'`, or add `#[Provider('anthropic')]` to each agent class.
+**Provider: Anthropic — wired.** `config/ai.php` is published with `'default' => 'anthropic'`; `ANTHROPIC_API_KEY` is set in `.env`. Connection and auth are confirmed working (see setup gaps below for the current blocker). No per-agent `#[Provider(...)]` attribute is needed since it's the app-wide default.
 
 `App\Concerns\{PasswordValidationRules,ProfileValidationRules}` live in `app/Concerns/` (moved from `app/Ai/Concerns/`, where the namespace didn't match the path and Fortify's `CreateNewUser`/`ResetUserPassword` fataled — registration and password reset were broken until this was fixed).
 
@@ -104,7 +104,8 @@ Not built yet: Form Requests, Policies/Gates, controllers/Livewire screens, and 
 
 ## Current setup gaps (resolve as the relevant phase begins)
 
-- `config/ai.php` unpublished — see the agent-team section.
+- **Anthropic account has no credits/quota** — an actual agent `->prompt()` call reaches Anthropic and authenticates, but fails with `InsufficientCreditsException`. Add billing/credits at console.anthropic.com before relying on any agent output.
+- This machine's `C:\php\php.ini` had no CA bundle configured (`curl.cainfo`/`openssl.cafile` empty), so **any** outbound HTTPS call from PHP CLI failed with `cURL error 60: SSL certificate problem`. Fixed by pointing both at a downloaded `C:\php\cacert.pem`. This is a machine-level PHP setting, not part of the repo — note it here in case a fresh machine hits the same `ProviderConnectionException`.
 - `docs/business/discovery.md` §L.2 (10 follow-up questions: oil-change km interval, route list with standard km, fixed-cost amounts, driver hourly rate(s), exact weekly boundary, user roles for secretary/wife/son, surcharge confirmation, payment↔invoice cardinality, IVA exemptions) — needed to seed real data, not to change the schema.
 - `git remote origin` → `github.com/Michael35-ns/transport_bussines_ai.git`; pushed as of the schema-build commit.
 
