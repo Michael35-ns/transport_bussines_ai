@@ -8,7 +8,7 @@ Management system for a trucking company. It exists to answer one question with 
 
 Goals: real cost per truck; profitability per trip / route / customer / unit; preventive + corrective maintenance control; fleet availability and utilization; a single KPI dashboard; full traceability from every KPI down to the source records that produced it.
 
-**Status: Phase 1 (Discovery).** No domain code exists yet — the repo is the `laravel/livewire-starter-kit` with auth/settings scaffolding only. Do not start implementation until the discovery deliverables are validated by the user.
+**Status: schema built.** Discovery (business/finance/database docs) is validated enough to have produced the physical schema: 28 migrations (27 domain tables + a `users.role` alter) and their Eloquent models, factories, and enums are in place and migrated against the real MySQL database. No controllers, Livewire screens, Form Requests, Policies, or the financial-calculation service exist yet — those are the next phases (MVP, then Operations/Maintenance/Profitability/Dashboard per the phase list below).
 
 ## Mandatory stack
 
@@ -36,9 +36,9 @@ Pipeline order (each phase feeds the next):
 8. `DataAuditorAgent` — audits calculations, data integrity, simulated transactions.
 
 Invocation: `(new BusinessAnalystAgent)->prompt('...')` returns an `AgentResponse`; also `->stream()`, `->queue()`, and `::fake()` / `::assertPrompted()` for tests. Provider/model resolution falls back to `config('ai.default')` unless the class adds `#[Provider(...)]` / `#[Model(...)]`.
-**Provider: Anthropic (decided).** Not wired yet — `config/ai.php` is unpublished and there is no `ANTHROPIC_API_KEY`. Before the first agent run: publish the config, set `ai.default` (or add `#[Provider('anthropic')]` per agent), and set the key.
+**Provider: Anthropic (decided).** `ANTHROPIC_API_KEY` is set in `.env`. Still not fully wired — `config/ai.php` is unpublished (package default `ai.default` is `openai`), so before the first agent run either publish the config and set `'default' => 'anthropic'`, or add `#[Provider('anthropic')]` to each agent class.
 
-`app/Ai/Concerns/` (`PasswordValidationRules`, `ProfileValidationRules`) are unrelated Fortify traits — they declare namespace `App\Concerns` but sit under `app/Ai/`, so they resolve only via the optimized classmap. Move them to `app/Concerns/` when touched.
+`App\Concerns\{PasswordValidationRules,ProfileValidationRules}` live in `app/Concerns/` (moved from `app/Ai/Concerns/`, where the namespace didn't match the path and Fortify's `CreateNewUser`/`ResetUserPassword` fataled — registration and password reset were broken until this was fixed).
 
 ## Working method (from the project brief)
 
@@ -94,11 +94,19 @@ CI (`.github/workflows/tests.yml`): `composer setup` then `composer ci:check` on
 - Data layer today: only the `User` model plus framework + passkeys + 2FA migrations. `DatabaseSeeder` creates one `test@example.com` user.
 - Laravel Boost MCP server is enabled (`.mcp.json`); prefer its tools (`database-schema`, `search-docs`, `tinker`, …).
 
+## Domain data model
+
+27 tables beyond the starter kit's `users` (plus a `role` column added to `users`), matching [`docs/database/conceptual-model.md`](docs/database/conceptual-model.md) with the entity list finalized after the owner's Discovery answers. Migrations: `database/migrations/2026_09_10_2000*`, applied in FK-dependency order (lookups → master data → operations → maintenance → costs → billing → system). Models in `app/Models/`, one per table, using the app's attribute-based `#[Fillable]` convention and a `casts()` method; status/type columns are backed PHP enums in `app/Enums/`. Every model has a factory in `database/factories/`. `cost_types` is seeded with the owner's real categories (`database/seeders/CostTypeSeeder.php`).
+
+Key modelling decisions baked into the schema (see `docs/decisions/000{1,2,3}-*.md`): no capital-cost/depreciation columns; trip distance defaults from `routes.standard_km` (`trucks.current_odometer` is a maintained estimate, re-anchored by `maintenance.odometer`); driver pay (`driver_worklogs`) feeds the overhead pool, not a per-trip cost; overhead allocation is recorded per truck per period in `fixed_cost_allocations`; periods are explicit date ranges (weekly by default), never `YYYY-MM`. `maintenance_schedule` has no stored status column — `AL_DIA`/`PROXIMO`/`VENCIDO` is computed (see `MaintenanceSchedule::status()`).
+
+Not built yet: Form Requests, Policies/Gates, controllers/Livewire screens, and the financial-calculation service (cost/km, profit, margin, KPIs from `docs/finance/financial-model.md`) as a **tested** service — required before any of that ships, per the project's test-enforcement rule.
+
 ## Current setup gaps (resolve as the relevant phase begins)
 
-- DB is SQLite (`database/database.sqlite`); MySQL is mandated and the user manages the database instance. Point `config/database.php` / `.env` at MySQL, add a separate test database, and remove the `sqlite` / `:memory:` overrides in `phpunit.xml`.
-- Test suite currently fails 32/33: this PHP CLI has `pdo_mysql` but no `pdo_sqlite`. Moving tests to MySQL resolves it.
-- `config/ai.php` unpublished and no `ANTHROPIC_API_KEY` set — see the agent-team section.
+- `config/ai.php` unpublished — see the agent-team section.
+- `docs/business/discovery.md` §L.2 (10 follow-up questions: oil-change km interval, route list with standard km, fixed-cost amounts, driver hourly rate(s), exact weekly boundary, user roles for secretary/wife/son, surcharge confirmation, payment↔invoice cardinality, IVA exemptions) — needed to seed real data, not to change the schema.
+- `git remote origin` → `github.com/Michael35-ns/transport_bussines_ai.git`; pushed as of the schema-build commit.
 
 ---
 
