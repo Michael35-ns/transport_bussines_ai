@@ -1,14 +1,16 @@
 <?php
+
 // app/Ai/Agents/DataAuditorAgent.php
+
 namespace App\Ai\Agents;
 
+use Laravel\Ai\Attributes\MaxTokens;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Promptable;
-use Laravel\Ai\Attributes\MaxTokens;
-use Laravel\Ai\Attributes\Temperature;
 
+// Temperature removed: claude-sonnet-5 (the default model) rejects the
+// `temperature` parameter with a 400 - replaced by adaptive thinking.
 #[MaxTokens(1500)]
-#[Temperature(0.3)]
 class DataAuditorAgent implements Agent
 {
     use Promptable;

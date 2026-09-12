@@ -36,7 +36,7 @@ Pipeline order (each phase feeds the next):
 8. `DataAuditorAgent` — audits calculations, data integrity, simulated transactions.
 
 Invocation: `(new BusinessAnalystAgent)->prompt('...')` returns an `AgentResponse`; also `->stream()`, `->queue()`, and `::fake()` / `::assertPrompted()` for tests. Provider/model resolution falls back to `config('ai.default')` unless the class adds `#[Provider(...)]` / `#[Model(...)]`.
-**Provider: Anthropic — wired.** `config/ai.php` is published with `'default' => 'anthropic'`; `ANTHROPIC_API_KEY` is set in `.env`. Connection and auth are confirmed working (see setup gaps below for the current blocker). No per-agent `#[Provider(...)]` attribute is needed since it's the app-wide default.
+**Provider: Anthropic — confirmed working end-to-end.** `config/ai.php` published with `'default' => 'anthropic'`; `ANTHROPIC_API_KEY` set; account has credits. A real `->prompt()` call has been verified to return an actual Anthropic response. **No agent uses `#[Temperature(...)]`** — `claude-sonnet-5` (the default model) rejects the `temperature` parameter with a 400 (replaced by adaptive thinking on the current model generation); it was removed from all 8 classes. `#[MaxTokens(...)]` is unaffected.
 
 `App\Concerns\{PasswordValidationRules,ProfileValidationRules}` live in `app/Concerns/` (moved from `app/Ai/Concerns/`, where the namespace didn't match the path and Fortify's `CreateNewUser`/`ResetUserPassword` fataled — registration and password reset were broken until this was fixed).
 
@@ -104,10 +104,8 @@ Not built yet: Form Requests, Policies/Gates, controllers/Livewire screens, and 
 
 ## Current setup gaps (resolve as the relevant phase begins)
 
-- **Anthropic account has no credits/quota** — an actual agent `->prompt()` call reaches Anthropic and authenticates, but fails with `InsufficientCreditsException`. Add billing/credits at console.anthropic.com before relying on any agent output.
 - This machine's `C:\php\php.ini` had no CA bundle configured (`curl.cainfo`/`openssl.cafile` empty), so **any** outbound HTTPS call from PHP CLI failed with `cURL error 60: SSL certificate problem`. Fixed by pointing both at a downloaded `C:\php\cacert.pem`. This is a machine-level PHP setting, not part of the repo — note it here in case a fresh machine hits the same `ProviderConnectionException`.
-- `docs/business/discovery.md` §L.2: 8 of 10 answered (2026-09-11) and folded in. Still missing: **route list with standard km/toll** and **per-truck fixed-cost amounts** — both block seeding real data, not the schema.
-- **Pending structural change:** payments can settle more than one invoice (§L.2 #9) — `payments`/`payment_allocations` redesign proposed in [`docs/decisions/0004-payment-allocations.md`](docs/decisions/0004-payment-allocations.md), not yet migrated.
+- `docs/business/discovery.md` §L.2: all 10 answered (2026-09-11) and folded in, including the structural one (`payment_allocations`, [ADR 0004](docs/decisions/0004-payment-allocations.md), implemented). Still missing: **route list with standard km/toll** and **per-truck fixed-cost amounts** — both block seeding real data, not the schema.
 - `git remote origin` → `github.com/Michael35-ns/transport_bussines_ai.git`; pushed as of the schema-build commit.
 
 ---

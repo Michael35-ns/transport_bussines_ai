@@ -2,13 +2,14 @@
 
 namespace App\Ai\Agents; // O App\Agents según tu ruta
 
+use Laravel\Ai\Attributes\MaxTokens;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Promptable;
-use Laravel\Ai\Attributes\MaxTokens;
-use Laravel\Ai\Attributes\Temperature;
 
+// Temperature removed: claude-sonnet-5 (the default model) rejects the
+// `temperature` parameter with a 400 - it's been replaced by adaptive
+// thinking on the current model generation.
 #[MaxTokens(1500)]
-#[Temperature(0.5)]
 class BusinessAnalystAgent implements Agent
 {
     use Promptable; // <-- Este Trait provee los métodos prompt, stream, queue...
