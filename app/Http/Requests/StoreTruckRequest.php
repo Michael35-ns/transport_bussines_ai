@@ -27,9 +27,21 @@ class StoreTruckRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'plate' => ['required', 'string', 'max:20', Rule::unique('trucks', 'plate')],
-            'internal_no' => ['nullable', 'string', 'max:20', Rule::unique('trucks', 'internal_no')],
+        return self::buildRules(includeOdometer: true);
+    }
+
+    /**
+     * The shared field rules for a truck — also used by UpdateTruckRequest
+     * and the Trucks Livewire component, so this is the single source of
+     * truth for what a valid truck looks like.
+     *
+     * @return array<string, mixed>
+     */
+    public static function buildRules(?Truck $ignoring = null, bool $includeOdometer = false): array
+    {
+        $rules = [
+            'plate' => ['required', 'string', 'max:20', Rule::unique('trucks', 'plate')->ignore($ignoring)],
+            'internal_no' => ['nullable', 'string', 'max:20', Rule::unique('trucks', 'internal_no')->ignore($ignoring)],
             'vehicle_type' => ['required', new Enum(VehicleType::class)],
             'make' => ['nullable', 'string', 'max:60'],
             'model' => ['nullable', 'string', 'max:60'],
@@ -37,12 +49,17 @@ class StoreTruckRequest extends FormRequest
             'acquisition_date' => ['nullable', 'date'],
             'acquisition_mode' => ['required', new Enum(AcquisitionMode::class)],
             'financing_monthly' => ['nullable', 'numeric', 'min:0'],
-            // A one-time starting baseline only. Afterward the estimate is
-            // system-maintained and re-anchored by service records, not
-            // hand-edited (docs/decisions/0002-trip-distance-source.md).
-            'current_odometer' => ['nullable', 'numeric', 'min:0'],
             'status' => ['required', new Enum(ActiveStatus::class)],
             'base_yard' => ['nullable', 'string', 'max:120'],
         ];
+
+        if ($includeOdometer) {
+            // A one-time starting baseline only. Afterward the estimate is
+            // system-maintained and re-anchored by service records, not
+            // hand-edited (docs/decisions/0002-trip-distance-source.md).
+            $rules['current_odometer'] = ['nullable', 'numeric', 'min:0'];
+        }
+
+        return $rules;
     }
 }

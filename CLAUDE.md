@@ -120,9 +120,20 @@ auto-discovery, no manual registration. Covered by 21 tests
 (`tests/Feature/{Policies,Http/Requests}/`); `authorize()` is validated against the
 rule, not yet against a real route, since no controllers exist to bind one.
 
-Not built yet: controllers/Livewire screens (and Form Requests/Policies for the
-remaining models, following the same pattern once their screens are built), invoice
-status derivation (paid/partial/overdue), and IVA line-item tax.
+**Livewire screens exist for the core master data** — `Trucks`, `Drivers`, `Customers`,
+`Routes`, each a single class-based component combining list + search + pagination +
+a create/edit modal + delete, at `app/Livewire/{Plural}/Index.php` with its view at
+`resources/views/livewire/{plural}.blade.php` (Livewire's convention for a class
+literally named `Index`: no `index.blade.php` subpath). Routed in `routes/fleet.php`
+(`trucks`, `drivers`, `customers`, `routes`, all `auth`+`verified`), linked from the
+sidebar under "Flota". Each validates via its Form Request's rules and authorizes via
+its Policy on every action (`mount`, `create`, `edit`, `save`, `delete`) — never trusts
+the UI alone. 36 tests in `tests/Feature/Livewire/`.
+
+Not built yet: Livewire screens (and Form Requests/Policies, following the same
+pattern) for the remaining models — most notably `Trips`, which is more involved since
+its distance/price defaulting depends on the selected route/rate agreement. Also not
+built: invoice status derivation (paid/partial/overdue) and IVA line-item tax.
 
 ## Current setup gaps (resolve as the relevant phase begins)
 

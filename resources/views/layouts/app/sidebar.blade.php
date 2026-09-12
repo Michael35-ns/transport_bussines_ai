@@ -16,6 +16,21 @@
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
+
+                <flux:sidebar.group :heading="__('Flota')" class="grid">
+                    <flux:sidebar.item icon="truck" :href="route('trucks.index')" :current="request()->routeIs('trucks.index')" wire:navigate>
+                        {{ __('Camiones') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="user" :href="route('drivers.index')" :current="request()->routeIs('drivers.index')" wire:navigate>
+                        {{ __('Conductores') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="map" :href="route('routes.index')" :current="request()->routeIs('routes.index')" wire:navigate>
+                        {{ __('Rutas') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="building-office" :href="route('customers.index')" :current="request()->routeIs('customers.index')" wire:navigate>
+                        {{ __('Clientes') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
             </flux:sidebar.nav>
 
             <flux:spacer />
