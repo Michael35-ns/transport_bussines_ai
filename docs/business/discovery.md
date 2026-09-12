@@ -337,24 +337,22 @@ Formulas are in [`docs/finance/financial-model.md`](../finance/financial-model.m
 | 27 | Pilot & go-live | All 7 units; no fixed date, target before end of 2026 |
 | 28 | Currency / tax | Colones (CRC); IVA 13% |
 
-### L.2 Follow-up (blocks physical model / seed data)
+### L.2 Follow-up — answered 2026-09-11
 
-See §D.2 — the 10 items above, repeated here as direct questions:
+| # | Question | Answer | Effect |
+|---|---|---|---|
+| 1 | Oil-change interval in km | **Every 5,000 km** | Seed value for `maintenance_schedule.interval_value` |
+| 2 | Current odometer per truck; workshop records odometer at service? | **~500,000 km**, and the engines have already been overhauled (rebuilt) — the odometer is *not* reset by an overhaul, so the km total stays high even though engine wear resets | Seed `trucks.current_odometer` ≈ 500,000 as the starting estimate; the oil-change interval counts from the last **service**, not from vehicle age, so this doesn't change the schema |
+| 3 | Route list with standard km / toll | **Not available yet** | Still blocks seeding `routes`; no schema impact |
+| 4 | Per-truck fixed-cost amounts & billing cycle | **Not available yet** | Still blocks seeding `truck_fixed_costs`; no schema impact |
+| 5 | Driver hourly rate(s); logged per driver only or also per truck/trip? | **Only per driver** (rate itself still pending) | Confirms `driver_worklogs` correctly has no `truck_id` (already built this way) |
+| 6 | Weekly cycle boundary | **Week runs Thursday → Wednesday** | Confirms [ADR 0003](../decisions/0003-weekly-reporting-period.md) exactly as assumed — no change needed |
+| 7 | Roles for secretary, wife, son | **All three are administrators** (same role as each other) | Only `owner_admin` and `admin` are used in practice; `viewer` stays defined but unused for now |
+| 8 | Surcharges on the flat rate? | **None** | Confirms flat-rate-only pricing, no schema impact |
+| 9 | Can one payment cover more than one invoice? | **Yes** | **Structural** — `payments.invoice_id` (1:1) no longer models reality; needs a `payment_allocations` join. See [ADR 0004](../decisions/0004-payment-allocations.md) |
+| 10 | Is 13% IVA universal? | **Universal, no exemptions** | Confirms the flat 13% already assumed — no schema impact |
 
-1. What is the oil-change interval in kilometres? Any other preventive task to add?
-2. What is each truck's current odometer today (rough is fine)? Will the workshop
-   record odometer at every future service?
-3. Please share the route list with standard km (and typical toll) per route.
-4. Amount and billing cycle for each per-truck fixed cost (seguro, permisos,
-   fumigación, dekra, marchamo).
-5. Driver hourly rate(s); are daily hours logged per driver only, or also per
-   truck/trip?
-6. Does the reported week run Thursday→Wednesday, or start on Thursday?
-7. What should the secretary, your wife and your son each be able to see/do in the
-   system?
-8. Confirm: no surcharges on the flat trip rate (fuel, waiting, extra stops)?
-9. Can one payment cover more than one invoice, or is it always one payment per invoice?
-10. Is the 13% IVA universal, or are some trips/customers exempt?
+All ten are now resolved except #3 and #4 (route list, fixed-cost amounts) — those still block seeding real data but not the schema.
 
 ---
 

@@ -106,7 +106,8 @@ Not built yet: Form Requests, Policies/Gates, controllers/Livewire screens, and 
 
 - **Anthropic account has no credits/quota** — an actual agent `->prompt()` call reaches Anthropic and authenticates, but fails with `InsufficientCreditsException`. Add billing/credits at console.anthropic.com before relying on any agent output.
 - This machine's `C:\php\php.ini` had no CA bundle configured (`curl.cainfo`/`openssl.cafile` empty), so **any** outbound HTTPS call from PHP CLI failed with `cURL error 60: SSL certificate problem`. Fixed by pointing both at a downloaded `C:\php\cacert.pem`. This is a machine-level PHP setting, not part of the repo — note it here in case a fresh machine hits the same `ProviderConnectionException`.
-- `docs/business/discovery.md` §L.2 (10 follow-up questions: oil-change km interval, route list with standard km, fixed-cost amounts, driver hourly rate(s), exact weekly boundary, user roles for secretary/wife/son, surcharge confirmation, payment↔invoice cardinality, IVA exemptions) — needed to seed real data, not to change the schema.
+- `docs/business/discovery.md` §L.2: 8 of 10 answered (2026-09-11) and folded in. Still missing: **route list with standard km/toll** and **per-truck fixed-cost amounts** — both block seeding real data, not the schema.
+- **Pending structural change:** payments can settle more than one invoice (§L.2 #9) — `payments`/`payment_allocations` redesign proposed in [`docs/decisions/0004-payment-allocations.md`](docs/decisions/0004-payment-allocations.md), not yet migrated.
 - `git remote origin` → `github.com/Michael35-ns/transport_bussines_ai.git`; pushed as of the schema-build commit.
 
 ---

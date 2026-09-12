@@ -42,7 +42,7 @@ deletes on master data; status/enum values as short lookup tables or `string`, n
 | ~~`truck_driver_assignments`~~ | **Dropped** | Driver changes per trip, no fixed pairing (§L Q10) |
 | ~~`fuel_cards`~~ | **Dropped** | Retail purchases only, no cards (§L Q18) |
 | ~~`toll_tags`~~ | **Dropped** | Cash only, no electronic tag (§L Q19) |
-| ~~`payment_allocations`~~ | **Dropped for now** | Assume one payment settles one invoice unless §L.2 #9 says otherwise |
+| `payment_allocations` | **Adopted (revived)** | Owner confirmed a payment can cover several invoices (§L.2 #9) — see [ADR 0004](../decisions/0004-payment-allocations.md) |
 
 ### E.3 Normalization notes
 
@@ -83,13 +83,16 @@ deletes on master data; status/enum values as short lookup tables or `string`, n
 | maintenance_provider | 1 — ∞ | maintenance, tires | all maintenance is external |
 | tire | 1 — ∞ | tire_events | mount / rotate / dismount |
 | tire_event | ∞ — 1 | truck | position captured on the event |
-| invoice | 1 — ∞ | invoice_lines, payments | one payment settles one invoice (pending §L.2 #9) |
+| invoice | 1 — ∞ | invoice_lines | |
+| invoice | ∞ — ∞ | payments | via `payment_allocations` (ADR 0004) — a payment may settle several invoices |
+| customer | 1 — ∞ | payments | a payment belongs to the customer, not to one invoice |
 | invoice | ∞ — ∞ | trips | via `invoice_trip` |
 | overhead_cost | 1 — ∞ | fixed_cost_allocations | per period, per truck |
 | cost_type | 1 — ∞ | truck_expenses, truck_fixed_costs, overhead_costs | |
 | user | 1 — ∞ | (created_by on transactional tables) | traceability |
 
-**Remaining cardinality question:** payment ↔ invoice (assumed 1:∞ — confirm §L.2 #9).
+No remaining cardinality questions — the last open one (payment ↔ invoice) was
+resolved by §L.2 #9 (ADR 0004).
 
 ---
 
@@ -136,7 +139,9 @@ erDiagram
   INVOICE ||--o{ INVOICE_TRIP : bundles
   TRIP ||--o{ INVOICE_TRIP : "billed via"
   INVOICE ||--o{ INVOICE_LINE : contains
-  INVOICE ||--o{ PAYMENT : "settled by"
+  CUSTOMERS ||--o{ PAYMENT : pays
+  PAYMENT ||--o{ PAYMENT_ALLOCATION : "split into"
+  INVOICE ||--o{ PAYMENT_ALLOCATION : "settled by"
 ```
 
 Groups: **Operations** (truck, driver, driver_worklog, route, trip, fuel_record,
@@ -263,11 +268,18 @@ behind ADR 0001.
 `invoice_id*`, `description*`, `amount*` (money).
 
 ### payments `*`
-`invoice_id*`, `paid_at*`, `amount*` (money), `method?`, `reference?`, `created_by`.
+`customer_id*`, `paid_at*`, `amount*` (money, the full transaction), `method?`,
+`reference?`, `created_by`. A payment may settle one or several invoices — see
+`payment_allocations` (ADR 0004).
+
+### payment_allocations `*` *(new, ADR 0004)*
+`payment_id*`, `invoice_id*`, `amount*` (money — the slice of the payment applied to
+this invoice). `Σ amount` across a payment's allocations must not exceed that
+payment's `amount`. Unique on `(payment_id, invoice_id)`.
 
 ### users `*`
-Laravel default + `role*` (`owner_admin` | `admin` | `viewer` — final mapping for
-secretary/wife/son pending §L.2 #7), `status`.
+Laravel default + `role*` (`owner_admin` | `admin` | `viewer`; the owner is
+`owner_admin`, secretary/wife/son are all `admin`), `status`.
 
 ### attachments
 `attachable_type*`, `attachable_id*`, `disk`, `path*`, `original_name?`, `mime?`,
@@ -275,14 +287,22 @@ secretary/wife/son pending §L.2 #7), `status`.
 
 ---
 
-## Open modelling decisions (resolve with §L.2, record in `docs/decisions/`)
+## Open modelling decisions
 
-1. Whether `driver_worklogs` ever needs a truck/trip tag (currently: no — pure
-   overhead per owner answer).
-2. Exact weekly boundary (Thu→Wed vs starts-Thu) — ADR 0003 assumes the former.
-3. Whether payments can span multiple invoices (would revive `payment_allocations`).
-4. Whether IVA exemptions exist (would make `invoices.tax` conditional per line).
-5. Final role mapping for the secretary / wife / son.
+Resolved 2026-09-11 (discovery.md §L.2):
+
+1. ~~Whether `driver_worklogs` needs a truck/trip tag~~ — **No.** Confirmed pure
+   overhead, hours logged per driver only.
+2. ~~Exact weekly boundary~~ — **Thursday → Wednesday**, confirmed (ADR 0003).
+3. ~~Whether payments can span multiple invoices~~ — **Yes.** See
+   [ADR 0004](../decisions/0004-payment-allocations.md) — `payments` now records a
+   customer payment; `payment_allocations` splits it across one or more invoices.
+4. ~~Whether IVA exemptions exist~~ — **No, 13% is universal.**
+5. ~~Final role mapping for the secretary / wife / son~~ — **All three are
+   `admin`.** `viewer` stays defined but unused for now.
+
+Still open (not blocking):
+
 6. Whether a `truck_period_metrics` snapshot table is worth materialising for
    dashboard speed, or every KPI is computed live with drill-through — defer to the
    architecture phase; not blocking for the ERD.

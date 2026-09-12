@@ -1,8 +1,8 @@
 # 0003 — Weekly reporting period
 
-- **Status:** Accepted
+- **Status:** Accepted, boundary confirmed 2026-09-11
 - **Date:** 2026-09-10
-- **Deciders:** owner (Discovery §L Q24), `FinancialAnalystAgent`, `LaravelArchitectAgent`
+- **Deciders:** owner (Discovery §L Q24, §L.2 #6), `FinancialAnalystAgent`, `LaravelArchitectAgent`
 
 ## Context
 
@@ -12,9 +12,8 @@ of the financial model and dashboard assumed a monthly period `P`.
 ## Decision
 
 1. The system's primary period is a **week**, running **Thursday → Wednesday**,
-   reported on Thursday. (Exact boundary — whether the report-day Thursday is the
-   start or the end of the window it summarises — is a §L follow-up; assume "the week
-   ending the Wednesday before report day" until confirmed.)
+   reported on Thursday. Confirmed by the owner (discovery.md §L.2 #6): the week
+   starts Thursday and ends the following Wednesday.
 2. Periods are modelled as an explicit `period_start` / `period_end` date range
    everywhere (`fixed_cost_allocations`, dashboard filters, KPI queries) — **not** a
    `YYYY-MM` string.
