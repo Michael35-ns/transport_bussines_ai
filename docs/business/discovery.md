@@ -221,27 +221,20 @@ model (external only), tire tracking method, reporting period (weekly), historic
 data depth (2 years) and source (spreadsheets/paper), users (4, named roles pending),
 pilot scope (all units) and target (before end of 2026).
 
-### D.2 Still needed (blocks seeding / finalising the physical model)
+### D.2 Still needed (blocks seeding, not the schema)
 
-1. Oil-change interval in **kilometres** (and whether any other preventive task should
-   be added, e.g. filters, brake checks).
-2. A rough **current odometer** per truck today, to anchor the oil-change estimate at
-   go-live; and confirmation the workshop will record odometer at every future service.
-3. The **route list** with standard km (and typical toll cost) per route — this is now
-   the sole distance source (ADR 0002).
-4. Per-truck **fixed-cost amounts and billing cycle** for: seguro, permisos,
+Items 1, 2, 5–10 of the original list here were answered 2026-09-11 — see §L.2 below.
+Two remain open:
+
+1. Per-truck **fixed-cost amounts and billing cycle** for: seguro, permisos,
    fumigación, dekra, marchamo.
-5. **Driver hourly rate(s)**, and whether daily hours are logged per driver only, or
-   also tagged to a truck/trip (affects whether the driver-labour pool can ever be
-   made truck-specific instead of pure overhead).
-6. Exact **weekly cycle boundary** — is Thursday the report day for "last Thu→Wed", or
-   does the week start Thursday? (ADR 0003 assumes the former.)
-7. Roles for the **secretary, wife and son** — data-entry (admin) vs read-only.
-8. Confirm **no surcharges** apply to the flat trip rate (fuel, waiting time, extra
-   stops) — or list them if they do.
-9. For 8/15-day customers, does one **payment always settle one invoice**, or can a
-   single payment cover several invoices?
-10. Is **IVA 13% universal**, or are any customers/trip types exempt or zero-rated?
+2. The **route list** with standard km (and typical toll cost) per route. **Partially
+   advanced**: `Viajes.docx` gave the weekly route/stop schedule, extracted and analysed
+   in [`docs/business/routes-inventory.md`](routes-inventory.md) — 19 recurring
+   day-of-week routes across schools/CEN-CINAI, supermarkets, and police delegations.
+   It does **not** give kilometres; the owner and the user will measure `standard_km`
+   manually. `routes` stays unseeded until that column can be filled (ADR 0002 requires
+   it non-null).
 
 ---
 
@@ -352,7 +345,7 @@ Formulas are in [`docs/finance/financial-model.md`](../finance/financial-model.m
 | 9 | Can one payment cover more than one invoice? | **Yes** | **Structural** — `payments.invoice_id` (1:1) no longer models reality; needs a `payment_allocations` join. See [ADR 0004](../decisions/0004-payment-allocations.md) |
 | 10 | Is 13% IVA universal? | **Universal, no exemptions** | Confirms the flat 13% already assumed — no schema impact |
 
-All ten are now resolved except #3 and #4 (route list, fixed-cost amounts) — those still block seeding real data but not the schema.
+All ten are now resolved except #3 and #4 (route list, fixed-cost amounts) — those still block seeding real data but not the schema. #3 is partially advanced: see [`docs/business/routes-inventory.md`](routes-inventory.md) for the weekly route/stop schedule extracted from `Viajes.docx`; kilometres are still pending.
 
 ---
 
