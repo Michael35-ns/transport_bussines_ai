@@ -19,6 +19,8 @@ class InvoiceTrip extends Model
     /** @use HasFactory<InvoiceTripFactory> */
     use HasFactory;
 
+    protected $table = 'invoice_trip';
+
     /**
      * @return BelongsTo<Invoice, $this>
      */
