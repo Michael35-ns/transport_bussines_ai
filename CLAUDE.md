@@ -100,7 +100,18 @@ CI (`.github/workflows/tests.yml`): `composer setup` then `composer ci:check` on
 
 Key modelling decisions baked into the schema (see `docs/decisions/000{1,2,3}-*.md`): no capital-cost/depreciation columns; trip distance defaults from `routes.standard_km` (`trucks.current_odometer` is a maintained estimate, re-anchored by `maintenance.odometer`); driver pay (`driver_worklogs`) feeds the overhead pool, not a per-trip cost; overhead allocation is recorded per truck per period in `fixed_cost_allocations`; periods are explicit date ranges (weekly by default), never `YYYY-MM`. `maintenance_schedule` has no stored status column — `AL_DIA`/`PROXIMO`/`VENCIDO` is computed (see `MaintenanceSchedule::status()`).
 
-Not built yet: Form Requests, Policies/Gates, controllers/Livewire screens, and the financial-calculation service (cost/km, profit, margin, KPIs from `docs/finance/financial-model.md`) as a **tested** service — required before any of that ships, per the project's test-enforcement rule.
+**The financial-calculation engine is built**, in `app/Services/Financial/`:
+
+- `Period` — explicit date range value object (never `YYYY-MM`); `Period::weekContaining($date)` gives the Thu→Wed week (ADR 0003).
+- `ProrationCalculator` — prorates a monthly/quarterly/annual billed amount to a period (§J.3).
+- `TireCostEstimator` — straight-line tire amortisation over weeks mounted, from `tire_events` (§J.4).
+- `OverheadAllocationService` — computes the overhead pool (prorated `overhead_costs` + `driver_worklogs` pay) and persists the worked-days split to `fixed_cost_allocations` (ADR 0001). `allocate()` is idempotent per period.
+- `CostCalculator` — direct + indirect cost breakdown for a truck/period (§J.1); no capital-cost line.
+- `FinancialCalculator` — the facade: `truckSummary()`, `tripCost()`, `routeProfitability()`, `customerProfitability()`, `fleetSummary()`, `availability()`, `utilization()`. Customer attribution goes through a trip's `rate_agreement` or, failing that, its `invoice_trip.invoice`; a trip with neither is excluded, not guessed.
+
+All money math happens in `float` internally (rounded to 2dp only at the edges) rather than `bcmath` — the DB columns remain the `DECIMAL` source of truth; this is a reporting layer over them. 28 tests in `tests/{Unit,Feature}/Services/Financial/` cover the formulas and the documented edge cases (zero-trip weeks, corrective-only downtime, proration, unattributed trips).
+
+Not built yet: Form Requests, Policies/Gates, controllers/Livewire screens, invoice status derivation (paid/partial/overdue) and IVA line-item tax.
 
 ## Current setup gaps (resolve as the relevant phase begins)
 
