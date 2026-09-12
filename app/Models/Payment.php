@@ -7,21 +7,22 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * One payment settles one invoice, pending confirmation
- * (docs/business/discovery.md §L.2 #9).
+ * A customer transaction. May settle one or several invoices — see
+ * `allocations()` and docs/decisions/0004-payment-allocations.md.
  *
  * @property int $id
- * @property int $invoice_id
+ * @property int $customer_id
  * @property Carbon $paid_at
  * @property string $amount
  * @property string|null $method
  * @property string|null $reference
  * @property int $created_by
  */
-#[Fillable(['invoice_id', 'paid_at', 'amount', 'method', 'reference'])]
+#[Fillable(['customer_id', 'paid_at', 'amount', 'method', 'reference'])]
 class Payment extends Model
 {
     /** @use HasFactory<PaymentFactory> */
@@ -41,11 +42,11 @@ class Payment extends Model
     }
 
     /**
-     * @return BelongsTo<Invoice, $this>
+     * @return BelongsTo<Customer, $this>
      */
-    public function invoice(): BelongsTo
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(Invoice::class);
+        return $this->belongsTo(Customer::class);
     }
 
     /**
@@ -54,5 +55,13 @@ class Payment extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * @return HasMany<PaymentAllocation, $this>
+     */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(PaymentAllocation::class);
     }
 }

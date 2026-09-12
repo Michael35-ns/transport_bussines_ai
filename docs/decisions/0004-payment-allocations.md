@@ -1,6 +1,6 @@
 # 0004 — Payments can settle more than one invoice
 
-- **Status:** Proposed — pending confirmation before migrating (structural change)
+- **Status:** Accepted and implemented (2026-09-11)
 - **Date:** 2026-09-11
 - **Deciders:** owner (Discovery §L.2 #9), `DataArchitectAgent`
 

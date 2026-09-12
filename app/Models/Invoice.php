@@ -73,11 +73,22 @@ class Invoice extends Model
     }
 
     /**
-     * @return HasMany<Payment, $this>
+     * @return HasMany<PaymentAllocation, $this>
      */
-    public function payments(): HasMany
+    public function paymentAllocations(): HasMany
     {
-        return $this->hasMany(Payment::class);
+        return $this->hasMany(PaymentAllocation::class);
+    }
+
+    /**
+     * A payment may settle several invoices — see
+     * docs/decisions/0004-payment-allocations.md.
+     *
+     * @return BelongsToMany<Payment, $this>
+     */
+    public function payments(): BelongsToMany
+    {
+        return $this->belongsToMany(Payment::class, 'payment_allocations')->withPivot('amount');
     }
 
     /**
