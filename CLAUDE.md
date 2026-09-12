@@ -111,7 +111,18 @@ Key modelling decisions baked into the schema (see `docs/decisions/000{1,2,3}-*.
 
 All money math happens in `float` internally (rounded to 2dp only at the edges) rather than `bcmath` — the DB columns remain the `DECIMAL` source of truth; this is a reporting layer over them. 28 tests in `tests/{Unit,Feature}/Services/Financial/` cover the formulas and the documented edge cases (zero-trip weeks, corrective-only downtime, proration, unattributed trips).
 
-Not built yet: Form Requests, Policies/Gates, controllers/Livewire screens, invoice status derivation (paid/partial/overdue) and IVA line-item tax.
+**Form Requests and Policies exist for the core master data** (`Truck`, `Driver`,
+`Customer`, `Route`): `app/Http/Requests/{Store,Update}{Model}Request.php` and
+`app/Policies/{Model}Policy.php`, the latter thin subclasses of
+`App\Policies\ModelPolicy` (every role reads; only a non-viewer role — `owner_admin`,
+`admin` — writes; `UserRole::canManage()`). Policies rely on Laravel's naming-convention
+auto-discovery, no manual registration. Covered by 21 tests
+(`tests/Feature/{Policies,Http/Requests}/`); `authorize()` is validated against the
+rule, not yet against a real route, since no controllers exist to bind one.
+
+Not built yet: controllers/Livewire screens (and Form Requests/Policies for the
+remaining models, following the same pattern once their screens are built), invoice
+status derivation (paid/partial/overdue), and IVA line-item tax.
 
 ## Current setup gaps (resolve as the relevant phase begins)
 
