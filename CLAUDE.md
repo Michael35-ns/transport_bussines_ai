@@ -108,8 +108,9 @@ Key modelling decisions baked into the schema (see `docs/decisions/000{1,2,3}-*.
 - `OverheadAllocationService` — computes the overhead pool (prorated `overhead_costs` + `driver_worklogs` pay) and persists the worked-days split to `fixed_cost_allocations` (ADR 0001). `allocate()` is idempotent per period.
 - `CostCalculator` — direct + indirect cost breakdown for a truck/period (§J.1); no capital-cost line.
 - `FinancialCalculator` — the facade: `truckSummary()`, `tripCost()`, `routeProfitability()`, `customerProfitability()`, `fleetSummary()`, `availability()`, `utilization()`. Customer attribution goes through a trip's `rate_agreement` or, failing that, its `invoice_trip.invoice`; a trip with neither is excluded, not guessed.
+- `InvoiceCalculator` — derives an invoice's `subtotal`/`tax`/`total` from its `invoice_lines` (IVA is a flat, universal 13%, confirmed no exemptions) and its `status` from its `payment_allocations` vs. `due_date`. `draft`/`sent` are workflow states set by whoever issues the invoice and are never touched here; only `paid`/`partial`/`overdue` are derived. `recalculate()` is idempotent — call it again after any change to an invoice's lines or payment allocations (there's no controller/Livewire screen wired to it yet, so nothing calls it automatically today).
 
-All money math happens in `float` internally (rounded to 2dp only at the edges) rather than `bcmath` — the DB columns remain the `DECIMAL` source of truth; this is a reporting layer over them. 28 tests in `tests/{Unit,Feature}/Services/Financial/` cover the formulas and the documented edge cases (zero-trip weeks, corrective-only downtime, proration, unattributed trips).
+All money math happens in `float` internally (rounded to 2dp only at the edges) rather than `bcmath` — the DB columns remain the `DECIMAL` source of truth; this is a reporting layer over them. 37 tests in `tests/{Unit,Feature}/Services/Financial/` cover the formulas and the documented edge cases (zero-trip weeks, corrective-only downtime, proration, unattributed trips, invoice status precedence).
 
 **Form Requests and Policies exist for the core master data plus `Trip`** (`Truck`,
 `Driver`, `Customer`, `Route`, `Trip`): `app/Http/Requests/{Store,Update}{Model}Request.php`
@@ -147,7 +148,8 @@ before the `nullable`+`integer` rule sees it; Livewire still catches the resulti
 
 Covered by 76 tests total across both layers (`tests/Feature/{Policies,Http/Requests,Livewire}/`).
 
-Not built yet: invoice status derivation (paid/partial/overdue) and IVA line-item tax.
+Not built yet: an Invoices/Payments Livewire screen (to actually issue invoices, add
+lines, and record payments) — `InvoiceCalculator` above is ready to be called from it.
 
 ## Current setup gaps (resolve as the relevant phase begins)
 
