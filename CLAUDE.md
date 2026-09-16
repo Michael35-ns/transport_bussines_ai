@@ -108,7 +108,17 @@ Key modelling decisions baked into the schema (see `docs/decisions/000{1,2,3}-*.
 - `OverheadAllocationService` — computes the overhead pool (prorated `overhead_costs` + `driver_worklogs` pay) and persists the worked-days split to `fixed_cost_allocations` (ADR 0001). `allocate()` is idempotent per period.
 - `CostCalculator` — direct + indirect cost breakdown for a truck/period (§J.1); no capital-cost line.
 - `FinancialCalculator` — the facade: `truckSummary()`, `tripCost()`, `routeProfitability()`, `customerProfitability()`, `fleetSummary()`, `availability()`, `utilization()`. Customer attribution goes through a trip's `rate_agreement` or, failing that, its `invoice_trip.invoice`; a trip with neither is excluded, not guessed.
-- `InvoiceCalculator` — derives an invoice's `subtotal`/`tax`/`total` from its `invoice_lines` (IVA is a flat, universal 13%, confirmed no exemptions) and its `status` from its `payment_allocations` vs. `due_date`. `draft`/`sent` are workflow states set by whoever issues the invoice and are never touched here; only `paid`/`partial`/`overdue` are derived. `recalculate()` is idempotent — call it again after any change to an invoice's lines or payment allocations (there's no controller/Livewire screen wired to it yet, so nothing calls it automatically today).
+- `InvoiceCalculator` — derives an invoice's `subtotal`/`tax`/`total` from its `invoice_lines` (IVA is a flat, universal 13%, confirmed no exemptions) and its `status` from its `payment_allocations` vs. `due_date`. `draft`/`sent` are workflow states set by whoever issues the invoice and are never touched here; only `paid`/`partial`/`overdue` are derived. `recalculate()` is idempotent — call it again after any change to an invoice's lines or payment allocations.
+
+**Invoices are issued in a separate, external system — not this one.** The owner
+confirmed this after `InvoiceCalculator` was built (2026-09-15). `invoices`,
+`invoice_lines`, `payments`, and `payment_allocations` stay in the schema (Discovery
+already validated their fields and business rules, and `FinancialCalculator::customerProfitability()`
+falls back to `invoice_trip.invoice` for customer attribution), but **no Invoices/Payments
+Livewire screen will be built** — this app never creates or edits an invoice or payment.
+If that data needs to reach this system at all, it arrives by import/sync (a candidate
+for the n8n phase), not by manual entry here. `InvoiceCalculator` stays ready for
+whichever import path eventually writes `invoice_lines`/`payment_allocations` rows.
 
 All money math happens in `float` internally (rounded to 2dp only at the edges) rather than `bcmath` — the DB columns remain the `DECIMAL` source of truth; this is a reporting layer over them. 37 tests in `tests/{Unit,Feature}/Services/Financial/` cover the formulas and the documented edge cases (zero-trip weeks, corrective-only downtime, proration, unattributed trips, invoice status precedence).
 
@@ -148,8 +158,7 @@ before the `nullable`+`integer` rule sees it; Livewire still catches the resulti
 
 Covered by 76 tests total across both layers (`tests/Feature/{Policies,Http/Requests,Livewire}/`).
 
-Not built yet: an Invoices/Payments Livewire screen (to actually issue invoices, add
-lines, and record payments) — `InvoiceCalculator` above is ready to be called from it.
+No Invoices/Payments screen is planned — see the note under `InvoiceCalculator` above.
 
 ## Current setup gaps (resolve as the relevant phase begins)
 
