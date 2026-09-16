@@ -11,4 +11,13 @@ enum MaintenanceIntervalType: string
     case Km = 'km';
     case Days = 'days';
     case EngineHours = 'engine_hours';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Km => 'Kilómetros',
+            self::Days => 'Días',
+            self::EngineHours => 'Horas de motor',
+        };
+    }
 }

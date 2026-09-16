@@ -8,7 +8,13 @@ Management system for a trucking company. It exists to answer one question with 
 
 Goals: real cost per truck; profitability per trip / route / customer / unit; preventive + corrective maintenance control; fleet availability and utilization; a single KPI dashboard; full traceability from every KPI down to the source records that produced it.
 
-**Status: schema built.** Discovery (business/finance/database docs) is validated enough to have produced the physical schema: 28 migrations (27 domain tables + a `users.role` alter) and their Eloquent models, factories, and enums are in place and migrated against the real MySQL database. No controllers, Livewire screens, Form Requests, Policies, or the financial-calculation service exist yet — those are the next phases (MVP, then Operations/Maintenance/Profitability/Dashboard per the phase list below).
+**Status: MVP master data + maintenance in place, dashboard next.** The physical schema
+(28 migrations, Eloquent models/factories/enums), the financial-calculation engine
+(`app/Services/Financial/`), and Livewire CRUD screens with Form Requests + Policies for
+every master-data and maintenance model (`Truck`, `Driver`, `Customer`, `Route`, `Trip`,
+`MaintenanceProvider`, `MaintenanceSchedule`, `Maintenance`) are built and tested — see
+"Domain data model" below for what each layer does. Not built: the KPI dashboard
+(next), and — deliberately, per the owner — any Invoices/Payments screen.
 
 ## Mandatory stack
 
@@ -156,7 +162,36 @@ so an unselected `rate_agreement_id` (`''` from the `<select>`) normalizes to `n
 before the `nullable`+`integer` rule sees it; Livewire still catches the resulting
 `ValidationException` and populates the field errors the same way.
 
-Covered by 76 tests total across both layers (`tests/Feature/{Policies,Http/Requests,Livewire}/`).
+**`MaintenanceProvider`, `MaintenanceSchedule`, and `Maintenance` (service records) round
+out the same pattern** — `app/Livewire/{MaintenanceProviders,MaintenanceSchedules,
+Maintenances}/Index.php`, routed in `routes/maintenance.php`, linked from the sidebar
+under a new "Mantenimiento" group. Two bugs found and fixed while building this:
+`MaintenanceSchedule` and `Maintenance` were both missing an explicit `protected $table`
+(Eloquent guessed the plural `maintenance_schedules`/`maintenances`, but the migrations
+created singular `maintenance_schedule`/`maintenance` — same class of bug as
+`InvoiceTrip` earlier in this project).
+
+The oil-change interval is **5,000 km** and starting `current_odometer` is **~500,000
+km per truck** — real numbers from the owner (`docs/business/discovery.md` §L.2 #1–2),
+seeded as the `MaintenanceSchedules` form's defaults rather than invented.
+
+`app/Services/Maintenance/OdometerService::applyReading(Maintenance $maintenance)` —
+called from `Maintenances\Index::save()` after every create/update — implements the two
+re-anchoring effects from ADR 0002 that nothing else in the codebase did yet:
+1. `trucks.current_odometer` resets to the truck's most recent maintenance odometer
+   reading (by `completion_date`, not insertion order — so a backfilled older record
+   entered later can never regress a newer anchor).
+2. When the maintenance closes out a specific preventive `MaintenanceSchedule`
+   (`schedule_id` set, `type = preventive`), that schedule's `last_done_odometer` resets
+   to its own most recent reading. This isn't cosmetic: `MaintenanceSchedule::nextDueOdometer()`
+   falls back to the truck's ever-increasing `current_odometer` when `last_done_odometer`
+   is null, which would make a schedule's due point permanently chase the estimate and
+   never reach `VENCIDO` — resetting it is what makes the status computation mean anything
+   after a real service.
+
+Covered by 111 tests total across the master-data screens' Policies/Requests/Livewire
+layers, plus 5 more for `OdometerService` itself
+(`tests/Feature/{Policies,Http/Requests,Livewire,Services/Maintenance}/`).
 
 No Invoices/Payments screen is planned — see the note under `InvoiceCalculator` above.
 

@@ -30,6 +30,8 @@ class MaintenanceSchedule extends Model
     /** @use HasFactory<MaintenanceScheduleFactory> */
     use HasFactory;
 
+    protected $table = 'maintenance_schedule';
+
     /**
      * Get the attributes that should be cast.
      *

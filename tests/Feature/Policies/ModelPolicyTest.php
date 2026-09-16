@@ -4,6 +4,9 @@ namespace Tests\Feature\Policies;
 
 use App\Models\Customer;
 use App\Models\Driver;
+use App\Models\Maintenance;
+use App\Models\MaintenanceProvider;
+use App\Models\MaintenanceSchedule;
 use App\Models\Route;
 use App\Models\Trip;
 use App\Models\Truck;
@@ -12,12 +15,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * TruckPolicy, DriverPolicy, CustomerPolicy, RoutePolicy, and TripPolicy are
- * thin subclasses of the shared ModelPolicy (every role may read; only a
- * non-viewer role may write — docs/business/discovery.md §L.2 #7). Testing
- * them together avoids repeating the same assertions five times, while
- * looping over all five models still exercises Laravel's policy
- * auto-discovery for each one individually.
+ * TruckPolicy, DriverPolicy, CustomerPolicy, RoutePolicy, TripPolicy,
+ * MaintenanceProviderPolicy, MaintenanceSchedulePolicy, and
+ * MaintenancePolicy are thin subclasses of the shared ModelPolicy (every
+ * role may read; only a non-viewer role may write —
+ * docs/business/discovery.md §L.2 #7). Testing them together avoids
+ * repeating the same assertions eight times, while looping over all eight
+ * models still exercises Laravel's policy auto-discovery for each one
+ * individually.
  */
 class ModelPolicyTest extends TestCase
 {
@@ -28,7 +33,10 @@ class ModelPolicyTest extends TestCase
      */
     private function masterDataModels(): array
     {
-        return [Truck::class, Driver::class, Customer::class, Route::class, Trip::class];
+        return [
+            Truck::class, Driver::class, Customer::class, Route::class, Trip::class,
+            MaintenanceProvider::class, MaintenanceSchedule::class, Maintenance::class,
+        ];
     }
 
     public function test_every_role_can_view_master_data(): void
@@ -71,6 +79,9 @@ class ModelPolicyTest extends TestCase
             Customer::factory()->create(),
             Route::factory()->create(),
             Trip::factory()->create(),
+            MaintenanceProvider::factory()->create(),
+            MaintenanceSchedule::factory()->create(),
+            Maintenance::factory()->create(),
         ];
 
         foreach ($records as $record) {

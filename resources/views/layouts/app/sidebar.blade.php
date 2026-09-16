@@ -34,6 +34,18 @@
                         {{ __('Viajes') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
+
+                <flux:sidebar.group :heading="__('Mantenimiento')" class="grid">
+                    <flux:sidebar.item icon="wrench-screwdriver" :href="route('maintenance-providers.index')" :current="request()->routeIs('maintenance-providers.index')" wire:navigate>
+                        {{ __('Talleres') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="calendar-days" :href="route('maintenance-schedules.index')" :current="request()->routeIs('maintenance-schedules.index')" wire:navigate>
+                        {{ __('Programas preventivos') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="clipboard-document-list" :href="route('maintenances.index')" :current="request()->routeIs('maintenances.index')" wire:navigate>
+                        {{ __('Historial de servicios') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
             </flux:sidebar.nav>
 
             <flux:spacer />
