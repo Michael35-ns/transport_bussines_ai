@@ -8,13 +8,16 @@ Management system for a trucking company. It exists to answer one question with 
 
 Goals: real cost per truck; profitability per trip / route / customer / unit; preventive + corrective maintenance control; fleet availability and utilization; a single KPI dashboard; full traceability from every KPI down to the source records that produced it.
 
-**Status: MVP master data + maintenance in place, dashboard next.** The physical schema
-(28 migrations, Eloquent models/factories/enums), the financial-calculation engine
-(`app/Services/Financial/`), and Livewire CRUD screens with Form Requests + Policies for
-every master-data and maintenance model (`Truck`, `Driver`, `Customer`, `Route`, `Trip`,
-`MaintenanceProvider`, `MaintenanceSchedule`, `Maintenance`) are built and tested — see
-"Domain data model" below for what each layer does. Not built: the KPI dashboard
-(next), and — deliberately, per the owner — any Invoices/Payments screen.
+**Status: full MVP.** The physical schema (28 migrations, Eloquent models/factories/
+enums), the financial-calculation engine (`app/Services/Financial/`), the KPI dashboard,
+and Livewire CRUD screens with Form Requests + Policies for every master-data,
+maintenance, and operating-expense model (`Truck`, `Driver`, `Customer`, `Route`, `Trip`,
+`MaintenanceProvider`, `MaintenanceSchedule`, `Maintenance`, `FuelStation`, `FuelRecord`,
+`TollRecord`, `TruckExpense`, `TruckFixedCost`, `OverheadCost`, `DriverWorklog`) are
+built and tested — see "Domain data model" below for what each layer does. Deliberately
+not built: any Invoices/Payments screen (invoices are issued in a separate external
+system, per the owner). Remaining from the original phase list: n8n automation and
+deploy.
 
 ## Mandatory stack
 
@@ -213,6 +216,33 @@ import path.
 
 8 tests in `tests/Feature/Livewire/Dashboard/IndexTest.php` (plus the pre-existing
 `tests/Feature/DashboardTest.php`, still passing unchanged against the new component).
+
+**Operations & expenses screens complete the cost side of the model** —
+`FuelStation`, `FuelRecord`, `TollRecord`, `TruckExpense`, `TruckFixedCost`,
+`OverheadCost`, `DriverWorklog`, all in `routes/expenses.php` under the sidebar's
+"Combustible y gastos" group, same Form Request + Policy + Livewire pattern as
+everything else. A few things worth knowing before touching them:
+
+- `FuelRecord.total` and `DriverWorklog.computed_pay` are always computed server-side
+  (`liters * unit_price`, `hours * hourly_rate_snapshot`) — never a form field, same
+  convention as `Maintenance.total` and `InvoiceCalculator`.
+- `DriverWorklog.hourly_rate_snapshot` is copied from the driver's *current*
+  `hourly_rate` at save time, not entered — so a later rate change never rewrites
+  historical pay. `driver_worklogs` also has a real DB-level `unique(driver_id,
+  work_date)` constraint (one worklog per driver per day); `StoreDriverWorklogRequest::buildRules()`
+  takes the submitted `driver_id` as a parameter specifically to scope that
+  `Rule::unique()` check correctly — it can't be a plain static call like the other
+  Form Requests' `buildRules()`.
+- `TruckExpense`, `TruckFixedCost`, and `OverheadCost` each filter their `cost_type_id`
+  dropdown to the one `CostTypeScope` that actually applies (`expense`, `truck_fixed`,
+  `overhead` respectively) — `CostTypeSeeder`'s categories only make sense within their
+  own scope, and showing all of them in every dropdown would just invite mis-tagging.
+- `FuelRecord` and `TollRecord` both have an optional `trip_id`, offered only once a
+  truck is selected (that truck's own trips) — attributing a purchase to a trip is a
+  convenience, never required.
+
+Covered by 81 new tests. Verified: pint clean, phpstan level 7 clean, full suite
+273/273 passing.
 
 ## Current setup gaps (resolve as the relevant phase begins)
 

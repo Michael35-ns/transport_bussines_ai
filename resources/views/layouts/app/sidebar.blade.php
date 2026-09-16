@@ -46,6 +46,30 @@
                         {{ __('Historial de servicios') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
+
+                <flux:sidebar.group :heading="__('Combustible y gastos')" class="grid">
+                    <flux:sidebar.item icon="building-storefront" :href="route('fuel-stations.index')" :current="request()->routeIs('fuel-stations.index')" wire:navigate>
+                        {{ __('Estaciones') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="fire" :href="route('fuel-records.index')" :current="request()->routeIs('fuel-records.index')" wire:navigate>
+                        {{ __('Combustible') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="banknotes" :href="route('toll-records.index')" :current="request()->routeIs('toll-records.index')" wire:navigate>
+                        {{ __('Peajes') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="receipt-percent" :href="route('truck-expenses.index')" :current="request()->routeIs('truck-expenses.index')" wire:navigate>
+                        {{ __('Gastos de camión') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="shield-check" :href="route('truck-fixed-costs.index')" :current="request()->routeIs('truck-fixed-costs.index')" wire:navigate>
+                        {{ __('Costos fijos') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="building-office-2" :href="route('overhead-costs.index')" :current="request()->routeIs('overhead-costs.index')" wire:navigate>
+                        {{ __('Costos generales') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="clock" :href="route('driver-worklogs.index')" :current="request()->routeIs('driver-worklogs.index')" wire:navigate>
+                        {{ __('Horas de conductores') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
             </flux:sidebar.nav>
 
             <flux:spacer />

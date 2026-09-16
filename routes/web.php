@@ -12,3 +12,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
 require __DIR__.'/settings.php';
 require __DIR__.'/fleet.php';
 require __DIR__.'/maintenance.php';
+require __DIR__.'/expenses.php';

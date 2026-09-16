@@ -4,24 +4,29 @@ namespace Tests\Feature\Policies;
 
 use App\Models\Customer;
 use App\Models\Driver;
+use App\Models\DriverWorklog;
+use App\Models\FuelRecord;
+use App\Models\FuelStation;
 use App\Models\Maintenance;
 use App\Models\MaintenanceProvider;
 use App\Models\MaintenanceSchedule;
+use App\Models\OverheadCost;
 use App\Models\Route;
+use App\Models\TollRecord;
 use App\Models\Trip;
 use App\Models\Truck;
+use App\Models\TruckExpense;
+use App\Models\TruckFixedCost;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * TruckPolicy, DriverPolicy, CustomerPolicy, RoutePolicy, TripPolicy,
- * MaintenanceProviderPolicy, MaintenanceSchedulePolicy, and
- * MaintenancePolicy are thin subclasses of the shared ModelPolicy (every
- * role may read; only a non-viewer role may write —
+ * Every model's policy in this list is a thin subclass of the shared
+ * ModelPolicy (every role may read; only a non-viewer role may write —
  * docs/business/discovery.md §L.2 #7). Testing them together avoids
- * repeating the same assertions eight times, while looping over all eight
- * models still exercises Laravel's policy auto-discovery for each one
+ * repeating the same assertions once per model, while looping over all of
+ * them still exercises Laravel's policy auto-discovery for each one
  * individually.
  */
 class ModelPolicyTest extends TestCase
@@ -36,6 +41,8 @@ class ModelPolicyTest extends TestCase
         return [
             Truck::class, Driver::class, Customer::class, Route::class, Trip::class,
             MaintenanceProvider::class, MaintenanceSchedule::class, Maintenance::class,
+            FuelStation::class, FuelRecord::class, TollRecord::class,
+            TruckExpense::class, TruckFixedCost::class, OverheadCost::class, DriverWorklog::class,
         ];
     }
 
@@ -82,6 +89,13 @@ class ModelPolicyTest extends TestCase
             MaintenanceProvider::factory()->create(),
             MaintenanceSchedule::factory()->create(),
             Maintenance::factory()->create(),
+            FuelStation::factory()->create(),
+            FuelRecord::factory()->create(),
+            TollRecord::factory()->create(),
+            TruckExpense::factory()->create(),
+            TruckFixedCost::factory()->create(),
+            OverheadCost::factory()->create(),
+            DriverWorklog::factory()->create(),
         ];
 
         foreach ($records as $record) {
