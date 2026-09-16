@@ -30,6 +30,9 @@
                     <flux:sidebar.item icon="building-office" :href="route('customers.index')" :current="request()->routeIs('customers.index')" wire:navigate>
                         {{ __('Clientes') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="flag" :href="route('trips.index')" :current="request()->routeIs('trips.index')" wire:navigate>
+                        {{ __('Viajes') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

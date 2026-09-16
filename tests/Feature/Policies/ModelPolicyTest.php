@@ -5,17 +5,18 @@ namespace Tests\Feature\Policies;
 use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\Route;
+use App\Models\Trip;
 use App\Models\Truck;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * TruckPolicy, DriverPolicy, CustomerPolicy, and RoutePolicy are thin
- * subclasses of the shared ModelPolicy (every role may read; only a
+ * TruckPolicy, DriverPolicy, CustomerPolicy, RoutePolicy, and TripPolicy are
+ * thin subclasses of the shared ModelPolicy (every role may read; only a
  * non-viewer role may write — docs/business/discovery.md §L.2 #7). Testing
- * them together avoids repeating the same assertions four times, while
- * looping over all four models still exercises Laravel's policy
+ * them together avoids repeating the same assertions five times, while
+ * looping over all five models still exercises Laravel's policy
  * auto-discovery for each one individually.
  */
 class ModelPolicyTest extends TestCase
@@ -27,7 +28,7 @@ class ModelPolicyTest extends TestCase
      */
     private function masterDataModels(): array
     {
-        return [Truck::class, Driver::class, Customer::class, Route::class];
+        return [Truck::class, Driver::class, Customer::class, Route::class, Trip::class];
     }
 
     public function test_every_role_can_view_master_data(): void
@@ -69,6 +70,7 @@ class ModelPolicyTest extends TestCase
             Driver::factory()->create(),
             Customer::factory()->create(),
             Route::factory()->create(),
+            Trip::factory()->create(),
         ];
 
         foreach ($records as $record) {

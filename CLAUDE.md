@@ -111,29 +111,43 @@ Key modelling decisions baked into the schema (see `docs/decisions/000{1,2,3}-*.
 
 All money math happens in `float` internally (rounded to 2dp only at the edges) rather than `bcmath` — the DB columns remain the `DECIMAL` source of truth; this is a reporting layer over them. 28 tests in `tests/{Unit,Feature}/Services/Financial/` cover the formulas and the documented edge cases (zero-trip weeks, corrective-only downtime, proration, unattributed trips).
 
-**Form Requests and Policies exist for the core master data** (`Truck`, `Driver`,
-`Customer`, `Route`): `app/Http/Requests/{Store,Update}{Model}Request.php` and
-`app/Policies/{Model}Policy.php`, the latter thin subclasses of
+**Form Requests and Policies exist for the core master data plus `Trip`** (`Truck`,
+`Driver`, `Customer`, `Route`, `Trip`): `app/Http/Requests/{Store,Update}{Model}Request.php`
+and `app/Policies/{Model}Policy.php`, the latter thin subclasses of
 `App\Policies\ModelPolicy` (every role reads; only a non-viewer role — `owner_admin`,
 `admin` — writes; `UserRole::canManage()`). Policies rely on Laravel's naming-convention
-auto-discovery, no manual registration. Covered by 21 tests
-(`tests/Feature/{Policies,Http/Requests}/`); `authorize()` is validated against the
-rule, not yet against a real route, since no controllers exist to bind one.
+auto-discovery, no manual registration. `authorize()` is validated against the rule, not
+yet against a real route, since no controllers exist to bind one.
 
-**Livewire screens exist for the core master data** — `Trucks`, `Drivers`, `Customers`,
-`Routes`, each a single class-based component combining list + search + pagination +
-a create/edit modal + delete, at `app/Livewire/{Plural}/Index.php` with its view at
-`resources/views/livewire/{plural}.blade.php` (Livewire's convention for a class
-literally named `Index`: no `index.blade.php` subpath). Routed in `routes/fleet.php`
-(`trucks`, `drivers`, `customers`, `routes`, all `auth`+`verified`), linked from the
-sidebar under "Flota". Each validates via its Form Request's rules and authorizes via
-its Policy on every action (`mount`, `create`, `edit`, `save`, `delete`) — never trusts
-the UI alone. 36 tests in `tests/Feature/Livewire/`.
+**Livewire screens exist for the core master data plus `Trips`** — `Trucks`, `Drivers`,
+`Customers`, `Routes`, `Trips`, each a single class-based component combining list +
+search + pagination + a create/edit modal + delete, at `app/Livewire/{Plural}/Index.php`
+with its view at `resources/views/livewire/{plural}.blade.php` (Livewire's convention for
+a class literally named `Index`: no `index.blade.php` subpath). Routed in
+`routes/fleet.php` (`trucks`, `drivers`, `customers`, `routes`, `trips`, all
+`auth`+`verified`), linked from the sidebar under "Flota". Each validates via its Form
+Request's rules and authorizes via its Policy on every action (`mount`, `create`, `edit`,
+`save`, `delete`) — never trusts the UI alone.
 
-Not built yet: Livewire screens (and Form Requests/Policies, following the same
-pattern) for the remaining models — most notably `Trips`, which is more involved since
-its distance/price defaulting depends on the selected route/rate agreement. Also not
-built: invoice status derivation (paid/partial/overdue) and IVA line-item tax.
+`Trips` is the more involved screen: selecting a route defaults `distance` to
+`route.standard_km` and flags it `distance_estimated = true`
+(docs/decisions/0002-trip-distance-source.md); editing the distance by hand clears that
+flag. Selecting a `rate_agreement` (filtered to the chosen route, or a customer-wide
+agreement with `route_id = null`) defaults `price` and links the trip to a customer for
+`FinancialCalculator::customerProfitability()` — but `trips.price` stays authoritative
+and editable, and skipping the agreement leaves the trip unattributed to any customer
+until it's invoiced (`docs/database/conceptual-model.md`). A completed trip requires an
+`actual_end`, since `FinancialCalculator` recognises revenue by that column. `created_by`
+is intentionally excluded from the model's `#[Fillable]` list and set directly
+(`$trip->created_by = ...`) rather than mass-assigned. The component validates through
+`Validator::make()` with an explicit payload — not the usual `$this->validate()` — solely
+so an unselected `rate_agreement_id` (`''` from the `<select>`) normalizes to `null`
+before the `nullable`+`integer` rule sees it; Livewire still catches the resulting
+`ValidationException` and populates the field errors the same way.
+
+Covered by 76 tests total across both layers (`tests/Feature/{Policies,Http/Requests,Livewire}/`).
+
+Not built yet: invoice status derivation (paid/partial/overdue) and IVA line-item tax.
 
 ## Current setup gaps (resolve as the relevant phase begins)
 
