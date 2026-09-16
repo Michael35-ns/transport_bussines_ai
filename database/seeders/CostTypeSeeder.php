@@ -33,6 +33,7 @@ class CostTypeSeeder extends Seeder
             // Ad-hoc truck/trip expenses.
             ['name' => 'Lavado', 'scope' => CostTypeScope::Expense],
             ['name' => 'Multa', 'scope' => CostTypeScope::Expense],
+            ['name' => 'Viáticos', 'scope' => CostTypeScope::Expense],
         ];
 
         foreach ($types as $type) {
