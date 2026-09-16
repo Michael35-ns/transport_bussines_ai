@@ -195,6 +195,25 @@ layers, plus 5 more for `OdometerService` itself
 
 No Invoices/Payments screen is planned — see the note under `InvoiceCalculator` above.
 
+**The KPI dashboard is built**, at `app/Livewire/Dashboard/Index.php` /
+`resources/views/livewire/dashboard.blade.php`, replacing the starter kit's placeholder
+at the same `dashboard` route/name (no other route or link needed to change). Read-only,
+no Policy — every authenticated role can view it, same as every other model's `viewAny`.
+A `previousWeek()`/`nextWeek()`/`thisWeek()` navigator moves an `anchorDate` through
+`Period::weekContaining()` (Thu→Wed, ADR 0003); everything on the page is scoped to that
+one week. It shows: fleet-wide revenue/cost/profit/margin/cost-per-km/revenue-per-km
+(summed from `FinancialCalculator::fleetSummary()`), a per-truck breakdown table
+(including availability % and utilization %), and preventive-maintenance alert counts
+(`MaintenanceSchedule::status()` tallied across active schedules). A `flux:callout`
+at the top labels every km-based figure as an estimate, per ADR 0002's explicit
+requirement that these never be presented as exact. Deliberately excluded: any
+invoiced/collected/overdue KPI, since that depends on invoice data this app doesn't
+hold (see the `InvoiceCalculator` note above) — it can be added once that data has an
+import path.
+
+8 tests in `tests/Feature/Livewire/Dashboard/IndexTest.php` (plus the pre-existing
+`tests/Feature/DashboardTest.php`, still passing unchanged against the new component).
+
 ## Current setup gaps (resolve as the relevant phase begins)
 
 - This machine's `C:\php\php.ini` had no CA bundle configured (`curl.cainfo`/`openssl.cafile` empty), so **any** outbound HTTPS call from PHP CLI failed with `cURL error 60: SSL certificate problem`. Fixed by pointing both at a downloaded `C:\php\cacert.pem`. This is a machine-level PHP setting, not part of the repo — note it here in case a fresh machine hits the same `ProviderConnectionException`.
