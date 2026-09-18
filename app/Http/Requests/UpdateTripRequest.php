@@ -21,6 +21,6 @@ class UpdateTripRequest extends FormRequest
      */
     public function rules(): array
     {
-        return StoreTripRequest::buildRules($this->input('status'));
+        return StoreTripRequest::buildRules();
     }
 }

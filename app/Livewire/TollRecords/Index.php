@@ -86,10 +86,10 @@ class Index extends Component
         return Trip::query()
             ->where('truck_id', $this->truck_id)
             ->with('route')
-            ->orderByDesc('planned_start')
+            ->orderByDesc('actual_end')
             ->limit(50)
             ->get()
-            ->mapWithKeys(fn (Trip $trip) => [$trip->id => $trip->route->name.' — '.($trip->planned_start?->format('d/m/Y') ?? __('sin fecha'))])
+            ->mapWithKeys(fn (Trip $trip) => [$trip->id => $trip->route->name.' — '.($trip->actual_end?->format('d/m/Y') ?? __('sin fecha'))])
             ->all();
     }
 

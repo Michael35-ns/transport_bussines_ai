@@ -2,11 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\TripStatus;
 use App\Models\Trip;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Enum;
 
 class StoreTripRequest extends FormRequest
 {
@@ -25,31 +22,26 @@ class StoreTripRequest extends FormRequest
      */
     public function rules(): array
     {
-        return self::buildRules($this->input('status'));
+        return self::buildRules();
     }
 
     /**
      * Shared rules, reused by the Livewire component's own validate() call
-     * so the Form Request stays the single source of truth.
+     * so the Form Request stays the single source of truth. `status` and
+     * `actual_end` are deliberately absent — every trip captured through the
+     * UI is entered after the fact, so the component always sets
+     * `status = completed` and `actual_end = now()` itself rather than
+     * asking for them.
      *
      * @return array<string, mixed>
      */
-    public static function buildRules(?string $status = null): array
+    public static function buildRules(): array
     {
         return [
             'truck_id' => ['required', 'integer', 'exists:trucks,id'],
             'driver_id' => ['required', 'integer', 'exists:drivers,id'],
             'route_id' => ['required', 'integer', 'exists:routes,id'],
             'rate_agreement_id' => ['nullable', 'integer', 'exists:rate_agreements,id'],
-            'planned_start' => ['nullable', 'date'],
-            'actual_start' => ['nullable', 'date'],
-            'actual_end' => [
-                'nullable', 'date', 'after_or_equal:actual_start',
-                // Revenue is recognised at trip completion (FinancialCalculator
-                // reads `status = completed` trips by `actual_end`) — a
-                // completed trip with no actual_end could never be counted.
-                Rule::requiredIf(fn (): bool => $status === TripStatus::Completed->value),
-            ],
             // Required: defaults from route.standard_km, but always
             // authoritative once set (docs/decisions/0002).
             'distance' => ['required', 'numeric', 'min:0.01'],
@@ -57,7 +49,6 @@ class StoreTripRequest extends FormRequest
             // Required: defaults from the selected rate agreement, but
             // trips.price stays authoritative (docs/database/conceptual-model.md).
             'price' => ['required', 'numeric', 'min:0'],
-            'status' => ['required', new Enum(TripStatus::class)],
         ];
     }
 }

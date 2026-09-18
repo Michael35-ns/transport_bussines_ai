@@ -93,7 +93,7 @@ class IndexTest extends TestCase
             ->assertSet('price', 75000.0);
     }
 
-    public function test_an_admin_can_create_a_completed_trip_with_a_rate_agreement(): void
+    public function test_an_admin_can_create_a_trip_with_a_rate_agreement(): void
     {
         $truck = Truck::factory()->create();
         $driver = Driver::factory()->create();
@@ -112,9 +112,6 @@ class IndexTest extends TestCase
             ->set('driver_id', (string) $driver->id)
             ->set('route_id', (string) $route->id)
             ->set('rate_agreement_id', (string) $agreement->id)
-            ->set('actual_start', '2026-09-15T08:00')
-            ->set('actual_end', '2026-09-15T12:00')
-            ->set('status', TripStatus::Completed->value)
             ->call('save')
             ->assertHasNoErrors();
 
@@ -126,7 +123,7 @@ class IndexTest extends TestCase
         ]);
     }
 
-    public function test_a_completed_trip_requires_an_actual_end(): void
+    public function test_a_new_trip_is_automatically_completed_with_todays_date(): void
     {
         $truck = Truck::factory()->create();
         $driver = Driver::factory()->create();
@@ -139,9 +136,13 @@ class IndexTest extends TestCase
             ->set('driver_id', (string) $driver->id)
             ->set('route_id', (string) $route->id)
             ->set('price', 10000)
-            ->set('status', TripStatus::Completed->value)
             ->call('save')
-            ->assertHasErrors(['actual_end']);
+            ->assertHasNoErrors();
+
+        $trip = Trip::where('truck_id', $truck->id)->firstOrFail();
+
+        $this->assertSame(TripStatus::Completed, $trip->status);
+        $this->assertTrue($trip->actual_end->isToday());
     }
 
     public function test_a_viewer_cannot_create_a_trip(): void
@@ -163,9 +164,10 @@ class IndexTest extends TestCase
         $this->assertDatabaseMissing('trips', ['truck_id' => $truck->id]);
     }
 
-    public function test_an_admin_can_edit_a_trip(): void
+    public function test_an_admin_can_edit_a_trip_without_changing_its_completion_date(): void
     {
-        $trip = Trip::factory()->create(['price' => 40000]);
+        $trip = Trip::factory()->create(['actual_end' => now()->subWeek(), 'price' => 40000]);
+        $originalActualEnd = $trip->actual_end;
 
         $this->actingAs(User::factory()->admin()->create());
 
@@ -176,7 +178,9 @@ class IndexTest extends TestCase
             ->call('save')
             ->assertHasNoErrors();
 
-        $this->assertSame('55000.00', $trip->fresh()->price);
+        $trip->refresh();
+        $this->assertSame('55000.00', $trip->price);
+        $this->assertTrue($originalActualEnd->equalTo($trip->actual_end));
     }
 
     public function test_an_admin_can_delete_a_trip(): void

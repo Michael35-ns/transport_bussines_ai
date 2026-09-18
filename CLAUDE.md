@@ -156,14 +156,23 @@ flag. Selecting a `rate_agreement` (filtered to the chosen route, or a customer-
 agreement with `route_id = null`) defaults `price` and links the trip to a customer for
 `FinancialCalculator::customerProfitability()` — but `trips.price` stays authoritative
 and editable, and skipping the agreement leaves the trip unattributed to any customer
-until it's invoiced (`docs/database/conceptual-model.md`). A completed trip requires an
-`actual_end`, since `FinancialCalculator` recognises revenue by that column. `created_by`
-is intentionally excluded from the model's `#[Fillable]` list and set directly
-(`$trip->created_by = ...`) rather than mass-assigned. The component validates through
-`Validator::make()` with an explicit payload — not the usual `$this->validate()` — solely
-so an unselected `rate_agreement_id` (`''` from the `<select>`) normalizes to `null`
-before the `nullable`+`integer` rule sees it; Livewire still catches the resulting
+until it's invoiced (`docs/database/conceptual-model.md`). `created_by` is intentionally
+excluded from the model's `#[Fillable]` list and set directly (`$trip->created_by = ...`)
+rather than mass-assigned. The component validates through `Validator::make()` with an
+explicit payload — not the usual `$this->validate()` — solely so an unselected
+`rate_agreement_id` (`''` from the `<select>`) normalizes to `null` before the
+`nullable`+`integer` rule sees it; Livewire still catches the resulting
 `ValidationException` and populates the field errors the same way.
+
+**`planned_start`/`actual_start`/`actual_end`/`status` are not form fields** (owner
+request, 2026-09-18): every trip is captured after it already happened, so asking for
+four separate dates and a status was pure friction. `Trips\Index::save()` sets
+`status = TripStatus::Completed` and `actual_end = now()` itself on create only — editing
+an existing trip never touches either, so its original completion date is never
+overwritten. `planned_start`/`actual_start` stay unset (`null`) for every trip created
+through this UI; they remain in the schema only for whatever already has values (older
+rows, direct DB writes). `FuelRecords`/`TollRecords`' trip picker now labels each trip by
+`actual_end`, not `planned_start`, to match.
 
 **`MaintenanceProvider`, `MaintenanceSchedule`, and `Maintenance` (service records) round
 out the same pattern** — `app/Livewire/{MaintenanceProviders,MaintenanceSchedules,

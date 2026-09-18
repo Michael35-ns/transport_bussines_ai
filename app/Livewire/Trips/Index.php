@@ -34,19 +34,11 @@ class Index extends Component
 
     public string $rate_agreement_id = '';
 
-    public ?string $planned_start = null;
-
-    public ?string $actual_start = null;
-
-    public ?string $actual_end = null;
-
     public ?float $distance = null;
 
     public bool $distance_estimated = true;
 
     public ?float $price = null;
-
-    public string $status = '';
 
     /**
      * Mount the component.
@@ -76,7 +68,7 @@ class Index extends Component
                     ->orWhereHas('driver', fn ($q) => $q->where('name', 'like', $term))
                     ->orWhereHas('route', fn ($q) => $q->where('name', 'like', $term));
             })
-            ->orderByDesc('planned_start')
+            ->orderByDesc('actual_end')
             ->orderByDesc('id')
             ->paginate(10);
     }
@@ -131,15 +123,6 @@ class Index extends Component
                 $agreement->id => "{$agreement->customer->name} — ₡".number_format((float) $agreement->price, 2),
             ])
             ->all();
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    #[Computed]
-    public function statusOptions(): array
-    {
-        return collect(TripStatus::cases())->mapWithKeys(fn (TripStatus $case) => [$case->value => $case->label()])->all();
     }
 
     /**
@@ -204,13 +187,9 @@ class Index extends Component
         $this->driver_id = (string) $trip->driver_id;
         $this->route_id = (string) $trip->route_id;
         $this->rate_agreement_id = $trip->rate_agreement_id !== null ? (string) $trip->rate_agreement_id : '';
-        $this->planned_start = $trip->planned_start?->format('Y-m-d\TH:i');
-        $this->actual_start = $trip->actual_start?->format('Y-m-d\TH:i');
-        $this->actual_end = $trip->actual_end?->format('Y-m-d\TH:i');
         $this->distance = $trip->distance !== null ? (float) $trip->distance : null;
         $this->distance_estimated = $trip->distance_estimated;
         $this->price = $trip->price !== null ? (float) $trip->price : null;
-        $this->status = $trip->status->value;
 
         Flux::modal('trip-form')->show();
     }
@@ -232,18 +211,20 @@ class Index extends Component
             'driver_id' => $this->driver_id,
             'route_id' => $this->route_id,
             'rate_agreement_id' => $this->rate_agreement_id !== '' ? $this->rate_agreement_id : null,
-            'planned_start' => $this->planned_start,
-            'actual_start' => $this->actual_start,
-            'actual_end' => $this->actual_end,
             'distance' => $this->distance,
             'distance_estimated' => $this->distance_estimated,
             'price' => $this->price,
-            'status' => $this->status,
-        ], StoreTripRequest::buildRules($this->status))->validate();
+        ], StoreTripRequest::buildRules())->validate();
 
         if ($trip) {
             $trip->update($validated);
         } else {
+            // Every trip is captured after the fact — never planned ahead in
+            // this UI — so it's always completed as of right now, rather
+            // than asking for a status and a completion date.
+            $validated['status'] = TripStatus::Completed;
+            $validated['actual_end'] = now();
+
             // created_by is intentionally not mass-assignable — set it directly.
             $trip = new Trip($validated);
             $trip->created_by = auth()->user()->id;
@@ -275,12 +256,8 @@ class Index extends Component
      */
     public function resetForm(): void
     {
-        $this->reset([
-            'editingId', 'truck_id', 'driver_id', 'route_id', 'rate_agreement_id',
-            'planned_start', 'actual_start', 'actual_end', 'distance', 'price',
-        ]);
+        $this->reset(['editingId', 'truck_id', 'driver_id', 'route_id', 'rate_agreement_id', 'distance', 'price']);
         $this->distance_estimated = true;
-        $this->status = TripStatus::Planned->value;
         $this->resetErrorBag();
     }
 }

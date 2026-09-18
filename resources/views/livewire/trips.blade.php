@@ -26,9 +26,9 @@
                 <flux:table.column>{{ __('Camión') }}</flux:table.column>
                 <flux:table.column>{{ __('Conductor') }}</flux:table.column>
                 <flux:table.column>{{ __('Ruta') }}</flux:table.column>
+                <flux:table.column>{{ __('Fecha') }}</flux:table.column>
                 <flux:table.column align="end">{{ __('Distancia') }}</flux:table.column>
                 <flux:table.column align="end">{{ __('Precio') }}</flux:table.column>
-                <flux:table.column>{{ __('Estado') }}</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
 
@@ -38,6 +38,7 @@
                         <flux:table.cell variant="strong">{{ $trip->truck->plate }}</flux:table.cell>
                         <flux:table.cell>{{ $trip->driver->name }}</flux:table.cell>
                         <flux:table.cell>{{ $trip->route->name }}</flux:table.cell>
+                        <flux:table.cell>{{ $trip->actual_end?->format('d/m/Y') ?? '—' }}</flux:table.cell>
                         <flux:table.cell align="end">
                             {{ $trip->distance !== null ? number_format((float) $trip->distance, 1).' km' : '—' }}
                             @if ($trip->distance_estimated)
@@ -45,11 +46,6 @@
                             @endif
                         </flux:table.cell>
                         <flux:table.cell align="end">₡{{ number_format((float) $trip->price, 2) }}</flux:table.cell>
-                        <flux:table.cell>
-                            <flux:badge :color="$trip->status->value === 'completed' ? 'green' : ($trip->status->value === 'cancelled' ? 'red' : 'zinc')" size="sm">
-                                {{ $trip->status->label() }}
-                            </flux:badge>
-                        </flux:table.cell>
                         <flux:table.cell align="end">
                             <div class="flex justify-end gap-2">
                                 @can('update', $trip)
@@ -77,6 +73,9 @@
             <flux:heading size="lg">
                 {{ $editingId ? __('Editar viaje') : __('Nuevo viaje') }}
             </flux:heading>
+            @unless ($editingId)
+                <flux:subheading>{{ __('Se registra como completado con la fecha de hoy.') }}</flux:subheading>
+            @endunless
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <flux:select wire:model="truck_id" :label="__('Camión')" required>
@@ -106,16 +105,6 @@
                         <flux:select.option :value="$id">{{ $label }}</flux:select.option>
                     @endforeach
                 </flux:select>
-
-                <flux:input wire:model="planned_start" :label="__('Salida planeada')" type="datetime-local" />
-                <flux:select wire:model="status" :label="__('Estado')">
-                    @foreach ($this->statusOptions as $value => $label)
-                        <flux:select.option :value="$value">{{ $label }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-
-                <flux:input wire:model="actual_start" :label="__('Salida real')" type="datetime-local" />
-                <flux:input wire:model="actual_end" :label="__('Llegada real')" type="datetime-local" />
 
                 <flux:field>
                     <flux:input wire:model.blur="distance" :label="__('Distancia (km)')" type="number" step="0.01" required />
