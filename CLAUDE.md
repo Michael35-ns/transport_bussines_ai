@@ -253,11 +253,39 @@ everything else. A few things worth knowing before touching them:
 Covered by 81 new tests. Verified: pint clean, phpstan level 7 clean, full suite
 273/273 passing.
 
+**`Users` manages logins and roles**, at `app/Livewire/Users/Index.php`, routed in
+`routes/users.php` under a new "Administración" sidebar group — same pattern as every
+other screen. `UserPolicy` adds one rule on top of the shared `ModelPolicy`: nobody can
+delete their own account (`$user->isNot($model)`), so an admin can't lock themselves
+out. Password is required on create, optional on edit ("leave blank to keep the current
+one") via `StoreUserRequest::buildRules(?User $ignoring, bool $passwordRequired)`
+swapping the leading `required`/`nullable` rule, reusing `App\Concerns\PasswordValidationRules`
+(the same trait Fortify's own actions use). A user created here gets
+`email_verified_at` set immediately — it's an admin creating a coworker's account
+directly, not a self-registration, so the verification-email loop doesn't apply.
+Deleting a user checks every table with a `created_by` column restricted to `users.id`
+(`Users\Index::hasRelatedRecords()` — trips, fuel/toll records, trip/truck expenses,
+maintenance, driver worklogs, invoices, payments; kept in sync by hand, matching e.g.
+`CostTypeSeeder`'s hand-written category list) and shows a clear error instead of
+crashing on the database's own FK constraint.
+
+**`AdminUserSeeder`** creates/updates one guaranteed `owner_admin` login from
+`ADMIN_EMAIL`/`ADMIN_PASSWORD` environment variables (documented, empty, in
+`.env.example`) so a fresh deploy always has working credentials — the actual values
+only ever live in each environment's own `.env`/secrets, never in source control.
+`config/app.php` exposes them as `admin_email`/`admin_password` (Larastan forbids
+`env()` outside `config/`). `DatabaseSeeder` no longer creates the starter kit's
+`test@example.com` / `password` account — seeding well-known default credentials into
+an environment that might be production is a real risk, not just a formality.
+
+26 new tests. Verified: pint clean, phpstan level 7 clean, full suite 290/290 passing.
+
 ## Current setup gaps (resolve as the relevant phase begins)
 
 - This machine's `C:\php\php.ini` had no CA bundle configured (`curl.cainfo`/`openssl.cafile` empty), so **any** outbound HTTPS call from PHP CLI failed with `cURL error 60: SSL certificate problem`. Fixed by pointing both at a downloaded `C:\php\cacert.pem`. This is a machine-level PHP setting, not part of the repo — note it here in case a fresh machine hits the same `ProviderConnectionException`.
 - `docs/business/discovery.md` §L.2: all 10 answered (2026-09-11) and folded in, including the structural one (`payment_allocations`, [ADR 0004](docs/decisions/0004-payment-allocations.md), implemented). Still missing: **route list with standard km/toll** and **per-truck fixed-cost amounts** — both block seeding real data, not the schema.
 - `git remote origin` → `github.com/Michael35-ns/transport_bussines_ai.git`; pushed as of the schema-build commit.
+- **Real fleet-data seeders exist locally but are not committed**: `database/seeders/{Truck,Driver,Customer,Route,FuelStation,FuelRecord}Seeder.php` reproduce the real trucks/drivers/customers/routes/fuel data entered through the app (including drivers' real cédula numbers), and `DatabaseSeeder` already calls all of them locally. The owner chose to include this real data since the repo is private/family-only, but committing it wasn't something this session could do automatically (flagged by the coding assistant's own safety layer as publishing personal data) — **the owner needs to `git add database/seeders/ && git commit && git push` this batch themselves** before it reaches GitHub. Until then, a fresh clone's `DatabaseSeeder` will fail (missing classes) unless those six files are restored or their `$this->call(...)` lines are removed again.
 
 ---
 
