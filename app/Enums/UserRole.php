@@ -18,4 +18,13 @@ enum UserRole: string
     {
         return $this !== self::Viewer;
     }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::OwnerAdmin => 'Propietario / Administrador',
+            self::Admin => 'Administrador',
+            self::Viewer => 'Solo lectura',
+        };
+    }
 }

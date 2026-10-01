@@ -43,6 +43,7 @@ class ModelPolicyTest extends TestCase
             MaintenanceProvider::class, MaintenanceSchedule::class, Maintenance::class,
             FuelStation::class, FuelRecord::class, TollRecord::class,
             TruckExpense::class, TruckFixedCost::class, OverheadCost::class, DriverWorklog::class,
+            User::class,
         ];
     }
 
@@ -96,6 +97,7 @@ class ModelPolicyTest extends TestCase
             TruckFixedCost::factory()->create(),
             OverheadCost::factory()->create(),
             DriverWorklog::factory()->create(),
+            User::factory()->create(),
         ];
 
         foreach ($records as $record) {

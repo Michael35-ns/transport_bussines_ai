@@ -123,4 +123,19 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Bootstrap Admin Account
+    |--------------------------------------------------------------------------
+    |
+    | Read by AdminUserSeeder (database/seeders/AdminUserSeeder.php) to
+    | create/update the one guaranteed owner_admin login after a fresh
+    | deploy. Set both in this environment's real secrets — never commit
+    | real values to .env.example.
+    |
+    */
+
+    'admin_email' => env('ADMIN_EMAIL'),
+    'admin_password' => env('ADMIN_PASSWORD'),
+
 ];
