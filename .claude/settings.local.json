@@ -1,12 +1,22 @@
 {
-  "enabledMcpjsonServers": [
-    "laravel-boost"
-  ],
   "permissions": {
     "allow": [
       "Bash(git init *)",
       "Bash(git config *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(vendor/bin/phpstan analyse *)",
+      "Bash(vendor/bin/pint --dirty --format agent)",
+      "Bash(php artisan *)",
+      "Bash(git push *)",
+      "Bash(cd *)",
+      "Bash(mv resources/views/livewire/trucks/index.blade.php resources/views/livewire/trucks.blade.php)",
+      "Bash(rmdir resources/views/livewire/trucks)",
+      "Bash(xargs grep -l \"truck\\\\|heroicon\")",
+      "Bash(php -r ' *)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "laravel-boost"
+  ]
 }
