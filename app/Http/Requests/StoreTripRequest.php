@@ -27,11 +27,13 @@ class StoreTripRequest extends FormRequest
 
     /**
      * Shared rules, reused by the Livewire component's own validate() call
-     * so the Form Request stays the single source of truth. `status` and
-     * `actual_end` are deliberately absent — every trip captured through the
-     * UI is entered after the fact, so the component always sets
-     * `status = completed` and `actual_end = now()` itself rather than
-     * asking for them.
+     * so the Form Request stays the single source of truth. `status` is
+     * deliberately absent — every trip captured through the UI is entered
+     * after the fact, so the component always sets `status = completed`
+     * itself rather than asking for it. `actual_end` ("fecha de
+     * realización") defaults to today in the component but stays editable,
+     * since a trip is sometimes entered a few days after it actually
+     * happened (owner request, 2026-10-11).
      *
      * @return array<string, mixed>
      */
@@ -49,6 +51,8 @@ class StoreTripRequest extends FormRequest
             // Required: defaults from the selected rate agreement, but
             // trips.price stays authoritative (docs/database/conceptual-model.md).
             'price' => ['required', 'numeric', 'min:0'],
+            // A trip can't be completed in the future.
+            'actual_end' => ['required', 'date', 'before_or_equal:today'],
         ];
     }
 }

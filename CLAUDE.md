@@ -164,15 +164,23 @@ explicit payload — not the usual `$this->validate()` — solely so an unselect
 `nullable`+`integer` rule sees it; Livewire still catches the resulting
 `ValidationException` and populates the field errors the same way.
 
-**`planned_start`/`actual_start`/`actual_end`/`status` are not form fields** (owner
-request, 2026-09-18): every trip is captured after it already happened, so asking for
-four separate dates and a status was pure friction. `Trips\Index::save()` sets
-`status = TripStatus::Completed` and `actual_end = now()` itself on create only — editing
-an existing trip never touches either, so its original completion date is never
-overwritten. `planned_start`/`actual_start` stay unset (`null`) for every trip created
-through this UI; they remain in the schema only for whatever already has values (older
-rows, direct DB writes). `FuelRecords`/`TollRecords`' trip picker now labels each trip by
-`actual_end`, not `planned_start`, to match.
+**`planned_start`/`actual_start`/`status` are not form fields** (owner request,
+2026-09-18): every trip is captured after it already happened, so asking for three
+separate dates and a status was pure friction. `Trips\Index::save()` sets
+`status = TripStatus::Completed` itself on create only. `planned_start`/`actual_start`
+stay unset (`null`) for every trip created through this UI; they remain in the schema
+only for whatever already has values (older rows, direct DB writes). `FuelRecords`/
+`TollRecords`' trip picker labels each trip by `actual_end`, not `planned_start`.
+
+**`actual_end` ("fecha de realización") *is* a form field, editable on both create and
+edit** (owner request, 2026-10-11, refining the above) — it defaults to today
+(`Trips\Index::resetForm()`) but a trip is sometimes entered a few days after it
+happened, so the date needs to be correctable. `StoreTripRequest::buildRules()` caps it
+at `before_or_equal:today` — a trip can't be completed in the future. It's a plain
+`date` input (no time), so editing a trip without touching this field still re-submits
+it and truncates any pre-existing time-of-day to midnight — harmless, since nothing in
+this app ever reads a trip's completion *time*, only its date (`Period::weekContaining()`
+buckets by date).
 
 **`MaintenanceProvider`, `MaintenanceSchedule`, and `Maintenance` (service records) round
 out the same pattern** — `app/Livewire/{MaintenanceProviders,MaintenanceSchedules,

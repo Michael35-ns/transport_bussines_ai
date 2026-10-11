@@ -166,8 +166,8 @@ class IndexTest extends TestCase
 
     public function test_an_admin_can_edit_a_trip_without_changing_its_completion_date(): void
     {
-        $trip = Trip::factory()->create(['actual_end' => now()->subWeek(), 'price' => 40000]);
-        $originalActualEnd = $trip->actual_end;
+        $trip = Trip::factory()->create(['actual_end' => now()->subWeek()->startOfDay(), 'price' => 40000]);
+        $originalActualEnd = $trip->actual_end->toDateString();
 
         $this->actingAs(User::factory()->admin()->create());
 
@@ -180,7 +180,47 @@ class IndexTest extends TestCase
 
         $trip->refresh();
         $this->assertSame('55000.00', $trip->price);
-        $this->assertTrue($originalActualEnd->equalTo($trip->actual_end));
+        $this->assertSame($originalActualEnd, $trip->actual_end->toDateString());
+    }
+
+    public function test_an_admin_can_manually_set_the_completion_date(): void
+    {
+        $truck = Truck::factory()->create();
+        $driver = Driver::factory()->create();
+        $route = Route::factory()->create();
+
+        $this->actingAs(User::factory()->admin()->create());
+
+        Livewire::test(Index::class)
+            ->set('truck_id', (string) $truck->id)
+            ->set('driver_id', (string) $driver->id)
+            ->set('route_id', (string) $route->id)
+            ->set('price', 10000)
+            ->set('actual_end', '2026-10-01')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $trip = Trip::where('truck_id', $truck->id)->firstOrFail();
+
+        $this->assertSame('2026-10-01', $trip->actual_end->toDateString());
+    }
+
+    public function test_a_completion_date_in_the_future_is_rejected(): void
+    {
+        $truck = Truck::factory()->create();
+        $driver = Driver::factory()->create();
+        $route = Route::factory()->create();
+
+        $this->actingAs(User::factory()->admin()->create());
+
+        Livewire::test(Index::class)
+            ->set('truck_id', (string) $truck->id)
+            ->set('driver_id', (string) $driver->id)
+            ->set('route_id', (string) $route->id)
+            ->set('price', 10000)
+            ->set('actual_end', now()->addDay()->toDateString())
+            ->call('save')
+            ->assertHasErrors(['actual_end']);
     }
 
     public function test_an_admin_can_delete_a_trip(): void
