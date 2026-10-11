@@ -33,7 +33,12 @@ class StoreDriverWorklogRequest extends FormRequest
      * are always computed server-side from the driver's current
      * hourly_rate, never entered directly (docs/decisions/0001).
      *
-     * @param  string|int|null  $driverId  Scopes the one-worklog-per-day
+     * `hours` is a weekly total (the Livewire component normalizes
+     * `work_date` to that week's start before this runs), not a single
+     * day's hours — `max:168` is just the physical ceiling of a week
+     * (7 × 24h), not a labor-law limit.
+     *
+     * @param  string|int|null  $driverId  Scopes the one-worklog-per-week
      *                                     uniqueness check to this driver.
      * @return array<string, mixed>
      */
@@ -48,7 +53,7 @@ class StoreDriverWorklogRequest extends FormRequest
                     ->where(fn ($query) => $query->where('driver_id', $driverId))
                     ->ignore($ignoring),
             ],
-            'hours' => ['required', 'numeric', 'min:0.01', 'max:24'],
+            'hours' => ['required', 'numeric', 'min:0.01', 'max:168'],
             'notes' => ['nullable', 'string', 'max:200'],
         ];
     }

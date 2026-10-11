@@ -26,8 +26,10 @@ class DriverWorklogRequestsTest extends TestCase
     {
         return [
             'driver_id' => Driver::factory()->create()->id,
-            'work_date' => '2026-09-15',
-            'hours' => 8,
+            // A Thursday — the week's start, matching the convention the
+            // Livewire component normalizes every entry to.
+            'work_date' => '2026-09-10',
+            'hours' => 48,
             'notes' => null,
         ];
     }
@@ -41,17 +43,17 @@ class DriverWorklogRequestsTest extends TestCase
         $this->assertFalse($validator->fails());
     }
 
-    public function test_rejects_more_than_24_hours(): void
+    public function test_rejects_more_than_a_weeks_worth_of_hours(): void
     {
         $data = $this->validPayload();
-        $data['hours'] = 25;
+        $data['hours'] = 169;
 
         $validator = Validator::make($data, StoreDriverWorklogRequest::buildRules(null, $data['driver_id']));
 
         $this->assertTrue($validator->fails());
     }
 
-    public function test_rejects_a_second_worklog_for_the_same_driver_and_day(): void
+    public function test_rejects_a_second_worklog_for_the_same_driver_and_week(): void
     {
         $data = $this->validPayload();
         DriverWorklog::factory()->create(['driver_id' => $data['driver_id'], 'work_date' => $data['work_date']]);
@@ -62,7 +64,7 @@ class DriverWorklogRequestsTest extends TestCase
         $this->assertArrayHasKey('work_date', $validator->errors()->toArray());
     }
 
-    public function test_allows_the_same_day_for_a_different_driver(): void
+    public function test_allows_the_same_week_for_a_different_driver(): void
     {
         $data = $this->validPayload();
         DriverWorklog::factory()->create(['driver_id' => Driver::factory()->create()->id, 'work_date' => $data['work_date']]);

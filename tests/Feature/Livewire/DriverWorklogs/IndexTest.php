@@ -49,30 +49,42 @@ class IndexTest extends TestCase
 
         Livewire::test(Index::class)
             ->set('driver_id', (string) $driver->id)
+            // A Tuesday — should normalize to that week's Thursday start.
             ->set('work_date', '2026-09-15')
-            ->set('hours', 8)
+            ->set('hours', 48)
             ->call('save')
             ->assertHasNoErrors();
 
         $this->assertDatabaseHas('driver_worklogs', [
             'driver_id' => $driver->id,
-            'work_date' => '2026-09-15',
+            'work_date' => '2026-09-10',
             'hourly_rate_snapshot' => '1500.0000',
-            'computed_pay' => '12000.00',
+            'computed_pay' => '72000.00',
         ]);
     }
 
-    public function test_a_second_worklog_for_the_same_driver_and_day_is_rejected(): void
+    public function test_picking_any_day_of_a_week_normalizes_to_that_weeks_start(): void
+    {
+        $this->actingAs(User::factory()->admin()->create());
+
+        $component = Livewire::test(Index::class)->set('work_date', '2026-09-15');
+
+        $component->assertSet('work_date', '2026-09-10')
+            ->assertSet('weekLabel', '10/09 — 16/09/2026');
+    }
+
+    public function test_a_second_worklog_for_the_same_driver_and_week_is_rejected(): void
     {
         $driver = Driver::factory()->create();
-        DriverWorklog::factory()->create(['driver_id' => $driver->id, 'work_date' => '2026-09-15']);
+        DriverWorklog::factory()->create(['driver_id' => $driver->id, 'work_date' => '2026-09-10']);
 
         $this->actingAs(User::factory()->admin()->create());
 
         Livewire::test(Index::class)
             ->set('driver_id', (string) $driver->id)
+            // A different day in the same week as the existing entry above.
             ->set('work_date', '2026-09-15')
-            ->set('hours', 8)
+            ->set('hours', 48)
             ->call('save')
             ->assertHasErrors(['work_date']);
     }

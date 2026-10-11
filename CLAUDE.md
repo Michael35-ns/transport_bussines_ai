@@ -238,10 +238,19 @@ everything else. A few things worth knowing before touching them:
 - `DriverWorklog.hourly_rate_snapshot` is copied from the driver's *current*
   `hourly_rate` at save time, not entered — so a later rate change never rewrites
   historical pay. `driver_worklogs` also has a real DB-level `unique(driver_id,
-  work_date)` constraint (one worklog per driver per day); `StoreDriverWorklogRequest::buildRules()`
-  takes the submitted `driver_id` as a parameter specifically to scope that
-  `Rule::unique()` check correctly — it can't be a plain static call like the other
-  Form Requests' `buildRules()`.
+  work_date)` constraint; `StoreDriverWorklogRequest::buildRules()` takes the submitted
+  `driver_id` as a parameter specifically to scope that `Rule::unique()` check
+  correctly — it can't be a plain static call like the other Form Requests'
+  `buildRules()`.
+- **`DriverWorklog.hours` is a weekly total, not a single day's** (owner request,
+  2026-10-11) — capturing a row per day was pure friction for a business that already
+  reports everything on a Thu→Wed week (ADR 0003). `DriverWorklogs\Index::updatedWorkDate()`
+  snaps whatever date the user picks to `Period::weekContaining()->start` the moment
+  they pick it, client-side, before the uniqueness check ever runs — so two entries for
+  the same driver in the same week collide regardless of which day of that week each one
+  used, and `max:168` on `hours` (`StoreDriverWorklogRequest::buildRules()`) is a
+  physical ceiling (7 × 24h), not a labor-law limit. The table and form show the
+  resolved `jue–mié` range, not a bare date.
 - `TruckExpense`, `TruckFixedCost`, and `OverheadCost` each filter their `cost_type_id`
   dropdown to the one `CostTypeScope` that actually applies (`expense`, `truck_fixed`,
   `overhead` respectively) — `CostTypeSeeder`'s categories only make sense within their

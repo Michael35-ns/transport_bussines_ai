@@ -5,8 +5,10 @@ namespace App\Livewire\DriverWorklogs;
 use App\Http\Requests\StoreDriverWorklogRequest;
 use App\Models\Driver;
 use App\Models\DriverWorklog;
+use App\Services\Financial\Period;
 use Flux\Flux;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -23,8 +25,17 @@ class Index extends Component
 
     public string $driver_id = '';
 
+    /**
+     * Always normalized to the Thursday that starts the week this entry
+     * totals (see updatedWorkDate()) — picking any day of a week resolves
+     * to the same stored date, which is also what keeps the one-entry-
+     * per-driver-per-week uniqueness check meaningful.
+     */
     public ?string $work_date = null;
 
+    /**
+     * The week's total hours for this driver, not a single day's hours.
+     */
     public ?float $hours = null;
 
     public ?string $notes = null;
@@ -83,6 +94,36 @@ class Index extends Component
         return $driver ? round($this->hours * (float) $driver->hourly_rate, 2) : null;
     }
 
+    /**
+     * The Thu→Wed week (ADR 0003) that `work_date` currently resolves to,
+     * formatted for display next to the field.
+     */
+    #[Computed]
+    public function weekLabel(): ?string
+    {
+        if ($this->work_date === null) {
+            return null;
+        }
+
+        $period = Period::weekContaining(Carbon::parse($this->work_date));
+
+        return $period->start->format('d/m').' — '.$period->end->format('d/m/Y');
+    }
+
+    /**
+     * Picking any day snaps the stored value to that week's start, so two
+     * entries for the same driver in the same week always collide on the
+     * uniqueness check regardless of which day was picked.
+     */
+    public function updatedWorkDate(): void
+    {
+        if ($this->work_date === null || $this->work_date === '') {
+            return;
+        }
+
+        $this->work_date = Period::weekContaining(Carbon::parse($this->work_date))->start->toDateString();
+    }
+
     public function create(): void
     {
         $this->authorize('create', DriverWorklog::class);
@@ -129,7 +170,7 @@ class Index extends Component
         Flux::modal('driver-worklog-form')->close();
         $this->resetForm();
 
-        Flux::toast(variant: 'success', text: $worklog->wasRecentlyCreated ? __('Jornada registrada.') : __('Jornada actualizada.'));
+        Flux::toast(variant: 'success', text: $worklog->wasRecentlyCreated ? __('Horas registradas.') : __('Horas actualizadas.'));
     }
 
     public function delete(DriverWorklog $worklog): void
@@ -139,13 +180,13 @@ class Index extends Component
         $worklog->delete();
 
         unset($this->worklogs);
-        Flux::toast(variant: 'success', text: __('Jornada eliminada.'));
+        Flux::toast(variant: 'success', text: __('Registro eliminado.'));
     }
 
     public function resetForm(): void
     {
         $this->reset(['editingId', 'driver_id', 'hours', 'notes']);
-        $this->work_date = now()->toDateString();
+        $this->work_date = Period::weekContaining(now())->start->toDateString();
         $this->resetErrorBag();
     }
 }
