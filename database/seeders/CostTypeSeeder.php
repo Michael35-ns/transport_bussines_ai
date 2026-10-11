@@ -29,6 +29,7 @@ class CostTypeSeeder extends Seeder
             ['name' => 'Salarios', 'scope' => CostTypeScope::Overhead],
             ['name' => 'Salarios administrativos', 'scope' => CostTypeScope::Overhead],
             ['name' => 'Cargas sociales', 'scope' => CostTypeScope::Overhead],
+            ['name' => 'Vacaciones', 'scope' => CostTypeScope::Overhead],
 
             // Ad-hoc truck/trip expenses.
             ['name' => 'Lavado', 'scope' => CostTypeScope::Expense],
