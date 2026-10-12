@@ -73,9 +73,11 @@
             <flux:heading size="lg">
                 {{ $editingId ? __('Editar viaje') : __('Nuevo viaje') }}
             </flux:heading>
+            @unless ($editingId)
+                <flux:subheading>{{ __('Se registra como completado con la fecha de hoy.') }}</flux:subheading>
+            @endunless
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <flux:input wire:model="actual_end" :label="__('Fecha de realización')" type="date" class="sm:col-span-2" required />
                 <flux:select wire:model="truck_id" :label="__('Camión')" required>
                     <flux:select.option value="">{{ __('Seleccione un camión') }}</flux:select.option>
                     @foreach ($this->truckOptions as $id => $plate)

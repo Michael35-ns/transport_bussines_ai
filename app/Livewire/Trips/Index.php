@@ -41,13 +41,6 @@ class Index extends Component
     public ?float $price = null;
 
     /**
-     * "Fecha de realización" — the trip's completion date. Defaults to
-     * today but stays editable, since a trip is sometimes entered a few
-     * days after it actually happened.
-     */
-    public ?string $actual_end = null;
-
-    /**
      * Mount the component.
      */
     public function mount(): void
@@ -197,7 +190,6 @@ class Index extends Component
         $this->distance = $trip->distance !== null ? (float) $trip->distance : null;
         $this->distance_estimated = $trip->distance_estimated;
         $this->price = $trip->price !== null ? (float) $trip->price : null;
-        $this->actual_end = $trip->actual_end?->toDateString();
 
         Flux::modal('trip-form')->show();
     }
@@ -222,16 +214,16 @@ class Index extends Component
             'distance' => $this->distance,
             'distance_estimated' => $this->distance_estimated,
             'price' => $this->price,
-            'actual_end' => $this->actual_end,
         ], StoreTripRequest::buildRules())->validate();
 
         if ($trip) {
             $trip->update($validated);
         } else {
             // Every trip is captured after the fact — never planned ahead in
-            // this UI — so it's always completed, rather than asking for a
-            // status too.
+            // this UI — so it's always completed as of right now, rather
+            // than asking for a status and a completion date.
             $validated['status'] = TripStatus::Completed;
+            $validated['actual_end'] = now();
 
             // created_by is intentionally not mass-assignable — set it directly.
             $trip = new Trip($validated);
@@ -266,7 +258,6 @@ class Index extends Component
     {
         $this->reset(['editingId', 'truck_id', 'driver_id', 'route_id', 'rate_agreement_id', 'distance', 'price']);
         $this->distance_estimated = true;
-        $this->actual_end = now()->toDateString();
         $this->resetErrorBag();
     }
 }

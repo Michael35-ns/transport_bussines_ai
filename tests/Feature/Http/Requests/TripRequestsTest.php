@@ -13,9 +13,8 @@ use Tests\TestCase;
 /**
  * StoreTripRequest::buildRules() is shared verbatim by UpdateTripRequest and
  * by the Trips Livewire component, so testing it here covers all three.
- * `status` is deliberately not a field — the component always sets it
- * itself (every trip is captured after the fact). `actual_end` ("fecha de
- * realización") is a field, but can never be in the future.
+ * status/actual_end are deliberately not fields — the component always sets
+ * them itself (every trip is captured after the fact).
  */
 class TripRequestsTest extends TestCase
 {
@@ -34,7 +33,6 @@ class TripRequestsTest extends TestCase
             'distance' => 45.5,
             'distance_estimated' => true,
             'price' => 65000,
-            'actual_end' => now()->toDateString(),
         ];
     }
 
@@ -75,27 +73,5 @@ class TripRequestsTest extends TestCase
         $validator = Validator::make($data, StoreTripRequest::buildRules());
 
         $this->assertTrue($validator->fails());
-    }
-
-    public function test_requires_a_completion_date(): void
-    {
-        $data = $this->validPayload();
-        unset($data['actual_end']);
-
-        $validator = Validator::make($data, StoreTripRequest::buildRules());
-
-        $this->assertTrue($validator->fails());
-        $this->assertArrayHasKey('actual_end', $validator->errors()->toArray());
-    }
-
-    public function test_rejects_a_completion_date_in_the_future(): void
-    {
-        $data = $this->validPayload();
-        $data['actual_end'] = now()->addDay()->toDateString();
-
-        $validator = Validator::make($data, StoreTripRequest::buildRules());
-
-        $this->assertTrue($validator->fails());
-        $this->assertArrayHasKey('actual_end', $validator->errors()->toArray());
     }
 }
