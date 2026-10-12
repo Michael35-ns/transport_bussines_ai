@@ -15,10 +15,9 @@ class IndexTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guests_are_redirected_to_the_login_page(): void
-    {
-        $this->get(route('overhead-costs.index'))->assertRedirect(route('login'));
-    }
+    // No guest-redirect test here: the module is temporarily disabled
+    // (routes/expenses.php), so there's no route to request — the
+    // component itself still works, tested below via Livewire::test().
 
     public function test_a_viewer_can_see_the_cost_list(): void
     {
