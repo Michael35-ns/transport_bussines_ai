@@ -60,6 +60,9 @@
                     <flux:sidebar.item icon="shield-check" :href="route('truck-fixed-costs.index')" :current="request()->routeIs('truck-fixed-costs.index')" wire:navigate>
                         {{ __('Costos fijos') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="building-office-2" :href="route('overhead-costs.index')" :current="request()->routeIs('overhead-costs.index')" wire:navigate>
+                        {{ __('Costos generales') }}
+                    </flux:sidebar.item>
                     <flux:sidebar.item icon="clock" :href="route('driver-worklogs.index')" :current="request()->routeIs('driver-worklogs.index')" wire:navigate>
                         {{ __('Horas de conductores') }}
                     </flux:sidebar.item>

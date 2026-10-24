@@ -238,11 +238,12 @@ import path.
 `FuelStation`, `FuelRecord`, `TollRecord`, `TruckExpense`, `TruckFixedCost`,
 `OverheadCost`, `DriverWorklog`, all in `routes/expenses.php` under the sidebar's
 "Combustible y gastos" group, same Form Request + Policy + Livewire pattern as
-everything else. **`TollRecord` (Peajes) and `OverheadCost` (Costos generales) are
-temporarily disabled** (owner request, 2026-10-11) — their routes and sidebar entries
-are removed, but the Livewire components, Form Requests, Policies, and data model stay
-in place for a quick re-enable (just restore the two `Route::livewire()` lines and the
-two sidebar items). A few things worth knowing before touching them:
+everything else. **`TollRecord` (Peajes) is temporarily disabled** (owner request,
+2026-10-11) — its route and sidebar entry are removed, but the Livewire component, Form
+Request, Policy, and data model stay in place for a quick re-enable (just restore the
+`Route::livewire()` line and the sidebar item). `OverheadCost` (Costos generales) was
+disabled the same day and re-enabled 2026-10-23 so employee vacation pay can be logged
+(the seeded "Vacaciones" overhead cost type). A few things worth knowing before touching them:
 
 - `FuelRecord.total` and `DriverWorklog.computed_pay` are always computed server-side
   (`liters * unit_price`, `hours * hourly_rate_snapshot`) — never a form field, same
