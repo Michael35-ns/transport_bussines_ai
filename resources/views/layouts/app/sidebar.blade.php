@@ -72,6 +72,9 @@
                     <flux:sidebar.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.index')" wire:navigate>
                         {{ __('Usuarios') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="tag" :href="route('cost-types.index')" :current="request()->routeIs('cost-types.index')" wire:navigate>
+                        {{ __('Categorías de costos') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
