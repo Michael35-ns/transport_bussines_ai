@@ -7,7 +7,7 @@
 <section class="w-full">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <flux:heading size="xl">{{ __('Dashboard') }}</flux:heading>
+            <flux:heading size="xl">{{ __('Resumen de la flota') }}</flux:heading>
             <flux:subheading>{{ __('KPIs semanales de la flota (jueves a miércoles).') }}</flux:subheading>
         </div>
 
@@ -26,32 +26,12 @@
     </flux:callout>
 
     <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <flux:card size="sm">
-            <flux:text size="sm" class="text-zinc-500">{{ __('Ingresos') }}</flux:text>
-            <flux:heading size="lg">₡{{ number_format($totals['revenue'], 0) }}</flux:heading>
-        </flux:card>
-        <flux:card size="sm">
-            <flux:text size="sm" class="text-zinc-500">{{ __('Costo total') }}</flux:text>
-            <flux:heading size="lg">₡{{ number_format($totals['total_cost'], 0) }}</flux:heading>
-        </flux:card>
-        <flux:card size="sm">
-            <flux:text size="sm" class="text-zinc-500">{{ __('Utilidad neta') }}</flux:text>
-            <flux:heading size="lg" :class="$totals['profit_net'] < 0 ? 'text-red-600 dark:text-red-400' : ''">
-                ₡{{ number_format($totals['profit_net'], 0) }}
-            </flux:heading>
-        </flux:card>
-        <flux:card size="sm">
-            <flux:text size="sm" class="text-zinc-500">{{ __('Margen') }}</flux:text>
-            <flux:heading size="lg">{{ $totals['margin_pct'] !== null ? number_format($totals['margin_pct'], 1).'%' : '—' }}</flux:heading>
-        </flux:card>
-        <flux:card size="sm">
-            <flux:text size="sm" class="text-zinc-500">{{ __('Costo / km (est.)') }}</flux:text>
-            <flux:heading size="lg">{{ $totals['cost_per_km'] !== null ? '₡'.number_format($totals['cost_per_km'], 0) : '—' }}</flux:heading>
-        </flux:card>
-        <flux:card size="sm">
-            <flux:text size="sm" class="text-zinc-500">{{ __('Ingreso / km (est.)') }}</flux:text>
-            <flux:heading size="lg">{{ $totals['revenue_per_km'] !== null ? '₡'.number_format($totals['revenue_per_km'], 0) : '—' }}</flux:heading>
-        </flux:card>
+        <x-kpi-card :label="__('Ingresos')" icon="banknotes">₡{{ number_format($totals['revenue'], 0) }}</x-kpi-card>
+        <x-kpi-card :label="__('Costo total')" icon="receipt-percent">₡{{ number_format($totals['total_cost'], 0) }}</x-kpi-card>
+        <x-kpi-card :label="__('Utilidad neta')" icon="arrow-trending-up" :tone="$totals['profit_net'] < 0 ? 'bad' : 'good'">₡{{ number_format($totals['profit_net'], 0) }}</x-kpi-card>
+        <x-kpi-card :label="__('Margen')" icon="chart-pie">{{ $totals['margin_pct'] !== null ? number_format($totals['margin_pct'], 1).'%' : '—' }}</x-kpi-card>
+        <x-kpi-card :label="__('Costo / km (est.)')" icon="map">{{ $totals['cost_per_km'] !== null ? '₡'.number_format($totals['cost_per_km'], 0) : '—' }}</x-kpi-card>
+        <x-kpi-card :label="__('Ingreso / km (est.)')" icon="map-pin">{{ $totals['revenue_per_km'] !== null ? '₡'.number_format($totals['revenue_per_km'], 0) : '—' }}</x-kpi-card>
     </div>
 
     <div class="mt-6 flex flex-wrap gap-4">
